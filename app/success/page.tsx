@@ -8,7 +8,7 @@ import confetti from "canvas-confetti";
 function SuccessContent() {
   const searchParams = useSearchParams();
   
-  const orderNumber = searchParams.get("order") || "BTX3-00000000";
+  const orderNumber = searchParams.get("order") || "BIYORA-00000000";
   const total = searchParams.get("total") || "0";
 
   useEffect(() => {

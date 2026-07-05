@@ -10,7 +10,7 @@ export default function Footer() {
             <div className="w-8 h-8 rounded-full bg-[#C5A46E] flex items-center justify-center">
               <span className="text-[#2C2522] font-bold text-xl tracking-[-1px]">B</span>
             </div>
-            <span className="font-semibold text-2xl tracking-[-1px] text-white">BTX3</span>
+            <span className="font-semibold text-xl tracking-[-0.8px] text-white">BIYORA SHOP</span>
           </div>
           <p className="max-w-sm text-[#A89B8A] text-[15px] leading-relaxed">
             Bringing the legendary quality and vibrant heritage of Kantin Kwari Market in Kano 
@@ -59,7 +59,7 @@ export default function Footer() {
       </div>
 
       <div className="mt-16 pt-8 border-t border-white/10 max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-[#6B5F54]">
-        <div>© {new Date().getFullYear()} BTX3 Textiles Ltd. All rights reserved. Kano, Nigeria.</div>
+        <div>© {new Date().getFullYear()} BIYORA SHOP. All rights reserved. Kano, Nigeria.</div>
         <div className="flex gap-6">
           <span>Privacy</span>
           <span>Terms</span>

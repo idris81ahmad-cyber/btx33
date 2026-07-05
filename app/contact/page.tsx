@@ -58,7 +58,7 @@ export default function ContactPage() {
 
             <div>
               <label className="text-xs tracking-widest text-[#6B5F54]">YOUR MESSAGE</label>
-              <textarea {...register("message")} rows={7} className="input-premium mt-1.5 w-full rounded-2xl px-5 py-4 resize-y" placeholder="Hello BTX3 team, I am looking for..." />
+              <textarea {...register("message")} rows={7} className="input-premium mt-1.5 w-full rounded-2xl px-5 py-4 resize-y" placeholder="Hello BIYORA SHOP team, I am looking for..." />
               {errors.message && <p className="text-xs text-red-600 mt-1">{errors.message.message}</p>}
             </div>
 
@@ -80,7 +80,7 @@ export default function ContactPage() {
           <div>
             <div className="font-semibold text-[#2C2522] tracking-tight mb-1">CUSTOMER CARE</div>
             <div>+234 809 123 4567 (WhatsApp)</div>
-            <div>hello@btx3.com</div>
+            <div>hello@biyorashop.com</div>
           </div>
           <div>
             <div className="font-semibold text-[#2C2522] tracking-tight mb-1">BUSINESS HOURS</div>

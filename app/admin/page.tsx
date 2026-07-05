@@ -358,7 +358,7 @@ export default function AdminDashboard() {
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] mb-1">BTX3 ADMIN</div>
+          <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] mb-1">BIYORA SHOP ADMIN</div>
           <h1 className="text-4xl font-semibold tracking-[-1.5px]">Product Management</h1>
           <p className="text-[#6B5F54] mt-1">Full CRUD • Image management • Live updates to shop</p>
         </div>

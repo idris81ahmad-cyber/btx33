@@ -57,7 +57,7 @@ export default function AdminLogin() {
       <div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md border border-[#D4C9B8]">
         <div className="text-center mb-8">
           <div className="text-4xl mb-3">🛠️</div>
-          <h1 className="text-3xl font-semibold tracking-tight">BTX3 Admin</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">BIYORA SHOP Admin</h1>
           <p className="text-[#6B5F54] mt-2">Manage your premium textiles</p>
         </div>
 

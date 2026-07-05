@@ -9,7 +9,7 @@ export default function AboutPage() {
       </div>
 
       <div className="prose prose-stone max-w-3xl mt-10 text-[17px] leading-relaxed text-[#4A4038]">
-        <p>BTX3 was born from a deep love for the unparalleled quality, color, and craftsmanship found in Kantin Kwari — one of Africa&apos;s largest and most vibrant textile markets, located in the ancient city of Kano, Nigeria.</p>
+        <p>BIYORA SHOP was born from a deep love for the unparalleled quality, color, and craftsmanship found in Kantin Kwari — one of Africa&apos;s largest and most vibrant textile markets, located in the ancient city of Kano, Nigeria.</p>
         
         <p>For generations, traders in Kwari have sourced and perfected the finest Ankara wax prints, intricate laces from Europe and Asia, luxurious brocades, authentic Adire, and premium cottons. We have taken this heritage and elevated it into a modern, trustworthy digital experience for customers across Nigeria and the world.</p>
 
@@ -21,7 +21,7 @@ export default function AboutPage() {
           <li>We believe in fair pricing that respects both the makers and our customers.</li>
         </ul>
 
-        <p className="mt-8">BTX3 is more than an online store. It is a bridge — connecting the rich textile culture of Northern Nigeria with modern families, designers, and fashion lovers everywhere who value quality, beauty, and cultural pride.</p>
+        <p className="mt-8">BIYORA SHOP is more than an online store. It is a bridge — connecting the rich textile culture of Northern Nigeria with modern families, designers, and fashion lovers everywhere who value quality, beauty, and cultural pride.</p>
       </div>
 
       <div className="mt-16 grid md:grid-cols-3 gap-6">

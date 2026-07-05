@@ -1,9 +1,9 @@
-﻿# ðŸ§µ BTX3 â€” Premium African Textiles
+﻿# ðŸ§µ BIYORA SHOP â€” Premium African Textiles
 
 > **Kwari Market Quality, Delivered.**  
 > A modern, luxurious e-commerce experience showcasing the finest textiles from Kanoâ€™s iconic Kantin Kwari Market and premium African textile heritage.
 
-![BTX3 Preview](public/images/ankara-premium.jpg)
+![BIYORA SHOP Preview](public/images/ankara-premium.jpg)
 
 **Live Demo:** [btx33.vercel.app](https://btx33.vercel.app)
 
@@ -171,7 +171,7 @@ All products include rich descriptions, realistic specs, multiple image URLs, ra
 3. Vercel will auto-detect Next.js. Click **Deploy**
 4. Your site will be live in under 2 minutes with automatic HTTPS + edge caching
 
-**Custom Domain:** Add your domain in Vercel settings (recommended: `btx3.com` or similar)
+**Custom Domain:** Add your domain in Vercel settings (recommended: `biyorashop.com` or similar)
 
 ---
 
@@ -223,7 +223,7 @@ The current architecture is clean and scalable for these additions.
 ## ðŸ“„ License
 
 This project is open source for learning and personal/commercial use with attribution.  
-Created for Idris Ahmad â€” BTX3.
+Created for Idris Ahmad â€” BIYORA SHOP.
 
 ---
 

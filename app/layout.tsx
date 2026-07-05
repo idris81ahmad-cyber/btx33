@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BTX3 | Premium African Textiles | Kwari Market Quality Delivered",
+  title: "BIYORA SHOP | Premium African Textiles | Kwari Market Quality Delivered",
   description: "Discover curated premium African textiles and fabrics from the heart of Kano's Kantin Kwari Market. Luxury Ankara, Lace, Brocade, Adire & more. Worldwide delivery with exceptional quality.",
   icons: {
     icon: "/favicon.ico",

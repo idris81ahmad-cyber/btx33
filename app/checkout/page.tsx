@@ -61,14 +61,14 @@ export default function CheckoutPage() {
   const onSubmit = async (_data: CheckoutForm) => {
     setIsProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 1650));
-    const orderNumber = "BTX3-" + Date.now().toString().slice(-8);
+    const orderNumber = "BIYORA-" + Date.now().toString().slice(-8);
     clearCart();
     try {
       const confettiModule = await import("canvas-confetti");
       confettiModule.default({ particleCount: 180, spread: 90, origin: { y: 0.6 } });
     } catch {}
     toast.success("Order placed successfully!", {
-      description: `Order #${orderNumber} confirmed. Thank you for shopping with BTX3.`,
+      description: `Order #${orderNumber} confirmed. Thank you for shopping with BIYORA SHOP.`,
     });
     router.push(`/success?order=${orderNumber}&total=${total}`);
   };

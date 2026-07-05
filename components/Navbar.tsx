@@ -35,7 +35,7 @@ export default function Navbar() {
             <span className="text-[#C5A46E] font-bold text-2xl tracking-[-1.5px]">B</span>
           </div>
           <div>
-            <div className="font-semibold text-2xl tracking-[-1.2px] text-[#2C2522]">BTX3</div>
+            <div className="font-semibold text-xl tracking-[-0.8px] text-[#2C2522]">BIYORA SHOP</div>
             <div className="text-[10px] text-[#6B5F54] -mt-1.5 tracking-[1.5px]">KANO • LAGOS • WORLD</div>
           </div>
         </Link>
