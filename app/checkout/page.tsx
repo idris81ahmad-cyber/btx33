@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import ProductImage from "@/components/ProductImage";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/cart-store";
 import { useForm } from "react-hook-form";
@@ -188,8 +189,8 @@ export default function CheckoutPage() {
             <div className="space-y-5 mb-8 text-sm">
               {items.map((item) => (
                 <div key={`${item.id}-${item.selectedLength}`} className="flex gap-4">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0">
-                    <img src={item.images[0]} alt="" className="object-cover w-full h-full" />
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0">
+                    <ProductImage src={item.images[0]} alt={item.name} fill sizes="64px" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium leading-tight pr-2">{item.name}</div>

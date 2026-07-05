@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Star, ShoppingCart } from "lucide-react";
+import ProductImage from "@/components/ProductImage";
 import { Product } from "@/types/product";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
@@ -36,10 +37,12 @@ export default function ProductCard({ product }: ProductCardProps) {
       <div className="product-card bg-white rounded-3xl overflow-hidden h-full flex flex-col border border-[#D4C9B8]">
         {/* Image */}
         <div className="relative aspect-[4/3.2] bg-[#F4EDE3] overflow-hidden">
-          <img 
-            src={product.images[0]} 
+          <ProductImage
+            src={product.images[0]}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 16vw"
+            className="group-hover:scale-[1.06] transition-transform duration-700"
           />
           {hasSale && (
             <div className="absolute top-4 right-4 sale-badge bg-[#6B2D3C] text-white text-[10px] px-3.5 py-1 rounded-full font-medium tracking-[1px]">

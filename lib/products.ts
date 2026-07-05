@@ -31,8 +31,8 @@ export const products: Product[] = [
     category: "Ankara Prints",
     price: 18500,
     images: [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/ankara-premium.jpg",
-      "https://picsum.photos/id/1015/800/600",
+      "/images/ankara-premium.jpg",
+      "/images/royal-gold-brocade.jpg",
       "https://picsum.photos/id/106/800/600"
     ],
     rating: 4.8,
@@ -57,7 +57,7 @@ export const products: Product[] = [
     category: "Premium Lace",
     price: 48000,
     images: [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/classic-lace.jpg",
+      "/images/classic-lace.jpg",
       "https://picsum.photos/id/1074/800/600"
     ],
     rating: 4.9,
@@ -82,8 +82,8 @@ export const products: Product[] = [
     category: "Brocade & Damask",
     price: 35000,
     images: [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/guinea-brocade.jpg",
-      "https://picsum.photos/id/133/800/600"
+      "/images/guinea-brocade.jpg",
+      "/images/royal-gold-brocade.jpg"
     ],
     rating: 4.7,
     reviewCount: 203,
@@ -107,7 +107,7 @@ export const products: Product[] = [
     category: "Adire & Tie-Dye",
     price: 16500,
     images: [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/adire-luxury.jpg",
+      "/images/adire-luxury.jpg",
       "https://picsum.photos/id/201/800/600"
     ],
     rating: 4.6,
@@ -124,8 +124,204 @@ export const products: Product[] = [
       "Weight": "Traditional Weight",
       "Origin": "Yoruba Land"
     }
+  },
+  {
+    id: 5,
+    slug: "french-guipure-lace-champagne-gold",
+    name: "French Guipure Lace — Champagne Gold",
+    category: "Premium Lace",
+    price: 55000,
+    images: [
+      "/images/classic-lace.jpg",
+      "/images/royal-gold-brocade.jpg"
+    ],
+    rating: 4.9,
+    reviewCount: 64,
+    shortDescription: "Exquisite French guipure lace in warm champagne gold.",
+    description: "Delicate yet structured guipure lace from France. Perfect for luxury evening wear, bridal gowns, and special traditional outfits.",
+    inStock: 12,
+    colorFamily: "Champagne",
+    patternStyle: "Floral",
+    lengthOptions: ["5 yards"],
+    specifications: {
+      "Material": "French Guipure Lace",
+      "Width": "52 inches",
+      "Weight": "Light Luxury",
+      "Origin": "France"
+    }
+  },
+  {
+    id: 6,
+    slug: "emerald-silk-chiffon-luxe-drape",
+    name: "Emerald Silk Chiffon — Luxe Drape",
+    category: "Silk, Chiffon & Voile",
+    price: 29500,
+    images: [
+      "/images/velvet-damask.jpg",
+      "/images/guinea-brocade.jpg"
+    ],
+    rating: 4.8,
+    reviewCount: 91,
+    shortDescription: "Lustrous emerald silk chiffon with beautiful drape.",
+    description: "Premium silk chiffon in a rich emerald tone. Lightweight, breathable, and perfect for elegant flowing garments and headwraps.",
+    inStock: 38,
+    colorFamily: "Emerald",
+    patternStyle: "Solid",
+    lengthOptions: ["5 yards", "6 yards"],
+    specifications: {
+      "Material": "Silk Chiffon",
+      "Width": "44 inches",
+      "Weight": "Lightweight",
+      "Origin": "India / Nigeria"
+    }
+  },
+  {
+    id: 7,
+    slug: "premium-solid-cotton-poplin-warm-cream",
+    name: "Premium Solid Cotton Poplin — Warm Cream",
+    category: "Plain & Solid Premium Cottons",
+    price: 12800,
+    images: [
+      "/images/velvet-damask.jpg"
+    ],
+    rating: 4.5,
+    reviewCount: 112,
+    shortDescription: "Soft, high-quality warm cream cotton poplin.",
+    description: "Premium plain weave cotton poplin. Versatile base fabric for everyday wear, shirts, and easy-to-style traditional pieces.",
+    inStock: 65,
+    colorFamily: "Ivory",
+    patternStyle: "Solid",
+    lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    specifications: {
+      "Material": "100% Cotton Poplin",
+      "Width": "45 inches",
+      "Weight": "Medium",
+      "Origin": "Nigeria"
+    }
+  },
+  {
+    id: 8,
+    slug: "royal-blue-floral-ankara-wax-print",
+    name: "Royal Blue Floral Ankara Wax Print",
+    category: "Ankara Prints",
+    price: 19200,
+    images: [
+      "/images/ankara-premium.jpg",
+      "https://picsum.photos/id/1016/800/600"
+    ],
+    rating: 4.7,
+    reviewCount: 89,
+    shortDescription: "Bold royal blue Ankara with delicate floral motifs.",
+    description: "Classic wax print in striking royal blue with elegant floral patterns. A wardrobe staple for many occasions.",
+    inStock: 51,
+    colorFamily: "Royal Blue",
+    patternStyle: "Floral",
+    lengthOptions: ["5 yards", "6 yards"],
+    specifications: {
+      "Material": "100% Cotton",
+      "Width": "45 inches",
+      "Weight": "Premium Heavy",
+      "Origin": "Kano, Nigeria"
+    }
+  },
+  {
+    id: 9,
+    slug: "gold-thread-swiss-lace-white",
+    name: "Gold Thread Swiss Lace — White",
+    category: "Premium Lace",
+    price: 42500,
+    images: [
+      "/images/classic-lace.jpg",
+      "https://picsum.photos/id/1074/800/600"
+    ],
+    rating: 4.8,
+    reviewCount: 73,
+    shortDescription: "Elegant white Swiss lace with subtle gold threading.",
+    description: "Luxury Swiss lace featuring delicate gold metallic threads. Ideal for special events and high-end traditional attire.",
+    inStock: 24,
+    colorFamily: "Ivory",
+    patternStyle: "Floral",
+    lengthOptions: ["5 yards", "6 yards"],
+    specifications: {
+      "Material": "Swiss Voile Lace with Gold Thread",
+      "Width": "50 inches",
+      "Weight": "Light Luxury",
+      "Origin": "Europe"
+    }
+  },
+  {
+    id: 10,
+    slug: "deep-green-damask-shadda",
+    name: "Deep Green Damask Shadda",
+    category: "Brocade & Damask",
+    price: 38000,
+    images: [
+      "/images/royal-gold-brocade.jpg",
+      "/images/guinea-brocade.jpg"
+    ],
+    rating: 4.6,
+    reviewCount: 67,
+    shortDescription: "Rich deep green damask shadda with subtle sheen.",
+    description: "Traditional West African damask in a sophisticated deep green. Excellent structure and drape for grand occasions.",
+    inStock: 29,
+    colorFamily: "Emerald",
+    patternStyle: "Geometric",
+    lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    specifications: {
+      "Material": "Damask / Shadda",
+      "Width": "48 inches",
+      "Weight": "Medium-Heavy",
+      "Origin": "West Africa"
+    }
+  },
+  {
+    id: 11,
+    slug: "sunset-orange-handcrafted-adire",
+    name: "Sunset Orange Handcrafted Adire",
+    category: "Adire & Tie-Dye",
+    price: 24000,
+    images: [
+      "/images/adire-luxury.jpg",
+      "/images/ankara-premium.jpg"
+    ],
+    rating: 4.7,
+    reviewCount: 58,
+    shortDescription: "Vibrant handcrafted Adire in warm sunset orange.",
+    description: "Beautifully hand-tied and dyed Adire fabric in rich sunset tones. Each piece is unique and full of character.",
+    inStock: 33,
+    colorFamily: "Gold",
+    patternStyle: "Tie-Dye",
+    lengthOptions: ["5 yards", "6 yards"],
+    specifications: {
+      "Material": "100% Cotton",
+      "Width": "45 inches",
+      "Weight": "Traditional",
+      "Origin": "Yoruba Land"
+    }
+  },
+  {
+    id: 12,
+    slug: "soft-blush-pink-premium-voile",
+    name: "Soft Blush Pink Premium Voile",
+    category: "Silk, Chiffon & Voile",
+    price: 15200,
+    images: [
+      "/images/velvet-damask.jpg",
+      "/images/classic-lace.jpg"
+    ],
+    rating: 4.5,
+    reviewCount: 102,
+    shortDescription: "Delicate soft blush pink premium voile.",
+    description: "Light and airy premium voile in a gentle blush pink. Perfect for everyday elegance, headwraps, and flowing styles.",
+    inStock: 47,
+    colorFamily: "Ivory",
+    patternStyle: "Solid",
+    lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    specifications: {
+      "Material": "Premium Voile",
+      "Width": "44 inches",
+      "Weight": "Light",
+      "Origin": "Nigeria"
+    }
   }
-  // ... (remaining 8 products follow the same pattern with updated images where applicable)
-  // I kept some placeholder URLs for the rest for now. Let me know if you want all updated.
 ];
-

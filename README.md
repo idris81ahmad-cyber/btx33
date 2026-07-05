@@ -3,9 +3,9 @@
 > **Kwari Market Quality, Delivered.**  
 > A modern, luxurious e-commerce experience showcasing the finest textiles from Kanoâ€™s iconic Kantin Kwari Market and premium African textile heritage.
 
-![BTX3 Preview](https://picsum.photos/id/1015/1200/630)
+![BTX3 Preview](public/images/ankara-premium.jpg)
 
-**Live Demo:** [btx3.vercel.app](https://btx3.vercel.app) *(Coming soon)*
+**Live Demo:** [btx3.vercel.app](https://btx3.vercel.app)
 
 ---
 
@@ -58,8 +58,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/idris81ahmad-cyber/Btx3.git
-cd Btx3
+git clone https://github.com/idris81ahmad-cyber/btx33.git
+cd btx33
 ```
 
 ### 2. Install dependencies
@@ -88,7 +88,7 @@ npm start
 ## ðŸ“ Project Structure
 
 ```
-btx3/
+btx33/
 â”œâ”€â”€ app/
 â”‚   â”œâ”€â”€ layout.tsx                 # Root layout + Navbar + Toaster
 â”‚   â”œâ”€â”€ page.tsx                   # Beautiful homepage
@@ -159,7 +159,7 @@ All products include rich descriptions, realistic specs, multiple image URLs, ra
 
 1. Open `lib/products.ts`
 2. Add a new object to the `products` array following the existing `Product` interface
-3. Add beautiful image URLs (picsum or your own hosted images)
+3. Add image paths (`/images/your-fabric.jpg` in `public/images/`) or external URLs (configure hosts in `next.config.ts`)
 4. Thatâ€™s it â€” the shop, product pages, and filters will automatically include it!
 
 ---
@@ -167,7 +167,7 @@ All products include rich descriptions, realistic specs, multiple image URLs, ra
 ## ðŸ“¦ Deployment (Vercel â€” Recommended)
 
 1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) â†’ New Project â†’ Import `Btx3` repo
+2. Go to [vercel.com](https://vercel.com) â†’ New Project â†’ Import `btx33` repo
 3. Vercel will auto-detect Next.js. Click **Deploy**
 4. Your site will be live in under 2 minutes with automatic HTTPS + edge caching
 

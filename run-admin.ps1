@@ -1,6 +1,6 @@
 # BTX3 Admin Panel - Run helper (Windows)
 # Run this after the dep fixes:
-#   cd Btx3
+#   cd btx33
 #   .\run-admin.ps1
 
 $sysNode = "C:\Program Files\nodejs"

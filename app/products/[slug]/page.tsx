@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import ProductImage from "@/components/ProductImage";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Star, ShoppingCart, Heart } from "lucide-react";
 import type { Product } from "@/types/product";
@@ -89,10 +90,13 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
             className="gallery-main aspect-[4/3.15] rounded-3xl overflow-hidden border border-[#D4C9B8] bg-[#F4EDE3] relative cursor-zoom-in group"
             onClick={() => setIsLightboxOpen(true)}
           >
-            <img 
-              src={product.images[selectedImageIndex]} 
+            <ProductImage
+              src={product.images[selectedImageIndex]}
               alt={product.name}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.015]"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              priority
+              className="transition-transform duration-500 group-hover:scale-[1.015]"
             />
             <div className="absolute bottom-4 right-4 px-3 py-1 text-[10px] tracking-widest bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition">CLICK TO ENLARGE</div>
           </div>
@@ -102,9 +106,9 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
               <button
                 key={idx}
                 onClick={() => setSelectedImageIndex(idx)}
-                className={`gallery-thumb w-20 h-20 rounded-2xl overflow-hidden border-2 transition ${selectedImageIndex === idx ? 'active border-[#6B2D3C]' : 'border-transparent hover:border-[#D4C9B8]'}`}
+                className={`gallery-thumb relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition ${selectedImageIndex === idx ? 'active border-[#6B2D3C]' : 'border-transparent hover:border-[#D4C9B8]'}`}
               >
-                <img src={img} alt="" className="w-full h-full object-cover" />
+                <ProductImage src={img} alt="" fill sizes="80px" />
               </button>
             ))}
           </div>
@@ -228,10 +232,13 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
             >
               ✕
             </button>
-            <img 
-              src={product.images[selectedImageIndex]} 
-              alt={product.name} 
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl"
+            <ProductImage
+              src={product.images[selectedImageIndex]}
+              alt={product.name}
+              width={1200}
+              height={900}
+              objectFit="contain"
+              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
             />
             <div className="flex justify-center gap-2 mt-4">
               {product.images.map((_, idx) => (
@@ -259,8 +266,14 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
             {relatedProducts.map((related) => (
               <Link key={related.id} href={`/products/${related.slug}`} className="group block">
                 <div className="product-card bg-white rounded-3xl overflow-hidden border border-[#D4C9B8]">
-                  <div className="aspect-[4/3] overflow-hidden">
-                    <img src={related.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500" />
+                  <div className="relative aspect-[4/3] overflow-hidden">
+                    <ProductImage
+                      src={related.images[0]}
+                      alt={related.name}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="group-hover:scale-[1.04] transition-transform duration-500"
+                    />
                   </div>
                   <div className="p-4">
                     <div className="text-xs text-[#C5A46E] tracking-wide">{related.category}</div>

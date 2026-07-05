@@ -6,8 +6,8 @@
     "category": "Ankara Prints",
     "price": 18500,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/ankara-premium.jpg",
-      "https://picsum.photos/id/1015/800/600",
+      "/images/ankara-premium.jpg",
+      "/images/royal-gold-brocade.jpg",
       "https://picsum.photos/id/106/800/600"
     ],
     "rating": 4.8,
@@ -32,7 +32,7 @@
     "category": "Premium Lace",
     "price": 48000,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/classic-lace.jpg",
+      "/images/classic-lace.jpg",
       "https://picsum.photos/id/1074/800/600"
     ],
     "rating": 4.9,
@@ -57,8 +57,8 @@
     "category": "Brocade & Damask",
     "price": 35000,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/guinea-brocade.jpg",
-      "https://picsum.photos/id/133/800/600"
+      "/images/guinea-brocade.jpg",
+      "/images/royal-gold-brocade.jpg"
     ],
     "rating": 4.7,
     "reviewCount": 203,
@@ -82,7 +82,7 @@
     "category": "Adire & Tie-Dye",
     "price": 16500,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/adire-luxury.jpg",
+      "/images/adire-luxury.jpg",
       "https://picsum.photos/id/201/800/600"
     ],
     "rating": 4.6,
@@ -107,8 +107,8 @@
     "category": "Premium Lace",
     "price": 55000,
     "images": [
-      "https://picsum.photos/id/160/800/600",
-      "https://picsum.photos/id/201/800/600"
+      "/images/classic-lace.jpg",
+      "/images/royal-gold-brocade.jpg"
     ],
     "rating": 4.9,
     "reviewCount": 64,
@@ -132,8 +132,8 @@
     "category": "Silk, Chiffon & Voile",
     "price": 29500,
     "images": [
-      "https://picsum.photos/id/1005/800/600",
-      "https://picsum.photos/id/106/800/600"
+      "/images/velvet-damask.jpg",
+      "/images/guinea-brocade.jpg"
     ],
     "rating": 4.8,
     "reviewCount": 91,
@@ -157,7 +157,7 @@
     "category": "Plain & Solid Premium Cottons",
     "price": 12800,
     "images": [
-      "https://picsum.photos/id/201/800/600"
+      "/images/velvet-damask.jpg"
     ],
     "rating": 4.5,
     "reviewCount": 112,
@@ -181,7 +181,7 @@
     "category": "Ankara Prints",
     "price": 19200,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/ankara-premium.jpg",
+      "/images/ankara-premium.jpg",
       "https://picsum.photos/id/1016/800/600"
     ],
     "rating": 4.7,
@@ -206,7 +206,7 @@
     "category": "Premium Lace",
     "price": 42500,
     "images": [
-      "https://raw.githubusercontent.com/idris81ahmad-cyber/Btx3/main/public/images/classic-lace.jpg",
+      "/images/classic-lace.jpg",
       "https://picsum.photos/id/1074/800/600"
     ],
     "rating": 4.8,
@@ -231,7 +231,8 @@
     "category": "Brocade & Damask",
     "price": 38000,
     "images": [
-      "https://picsum.photos/id/133/800/600"
+      "/images/royal-gold-brocade.jpg",
+      "/images/guinea-brocade.jpg"
     ],
     "rating": 4.6,
     "reviewCount": 67,
@@ -255,8 +256,8 @@
     "category": "Adire & Tie-Dye",
     "price": 24000,
     "images": [
-      "https://picsum.photos/id/201/800/600",
-      "https://picsum.photos/id/160/800/600"
+      "/images/adire-luxury.jpg",
+      "/images/ankara-premium.jpg"
     ],
     "rating": 4.7,
     "reviewCount": 58,
@@ -280,7 +281,8 @@
     "category": "Silk, Chiffon & Voile",
     "price": 15200,
     "images": [
-      "https://picsum.photos/id/1005/800/600"
+      "/images/velvet-damask.jpg",
+      "/images/classic-lace.jpg"
     ],
     "rating": 4.5,
     "reviewCount": 102,

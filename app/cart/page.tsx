@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import ProductImage from "@/components/ProductImage";
 import { useCartStore } from "@/lib/cart-store";
 import { Trash2, Plus, Minus, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
@@ -47,8 +48,8 @@ export default function CartPage() {
             const itemTotal = item.currentPrice * item.quantity;
             return (
               <div key={`${item.id}-${item.selectedLength}`} className="cart-item bg-white border border-[#D4C9B8] rounded-3xl p-6 flex gap-6">
-                <div className="w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-[#EDE4D4]">
-                  <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
+                <div className="relative w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-[#EDE4D4]">
+                  <ProductImage src={item.images[0]} alt={item.name} fill sizes="112px" />
                 </div>
 
                 <div className="flex-1 min-w-0">
