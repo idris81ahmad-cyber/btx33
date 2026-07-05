@@ -337,5 +337,28 @@
       "Weight": "Light",
       "Origin": "Nigeria"
     }
+  },
+  {
+    "name": "Test Fabric 1783266894952",
+    "category": "Ankara Prints",
+    "price": 19999,
+    "shortDescription": "Test short description",
+    "description": "Test full description",
+    "inStock": 10,
+    "colorFamily": "Gold",
+    "patternStyle": "Geometric",
+    "lengthOptions": [
+      "5 yards"
+    ],
+    "specifications": {
+      "Material": "Cotton"
+    },
+    "images": [
+      "/images/ankara-premium.jpg"
+    ],
+    "rating": 4.5,
+    "reviewCount": 0,
+    "slug": "test-fabric-1783266894952",
+    "id": 13
   }
 ]
