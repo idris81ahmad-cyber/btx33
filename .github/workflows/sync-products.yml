@@ -1,0 +1,31 @@
+name: Sync Products Catalog
+
+on:
+  repository_dispatch:
+    types: [sync-products]
+
+jobs:
+  update-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write products.json
+        run: |
+          python - <<'PY'
+          import json, os
+          payload = json.loads(os.environ["PRODUCTS_JSON"])
+          with open("data/products.json", "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+            f.write("\n")
+          PY
+        env:
+          PRODUCTS_JSON: ${{ toJson(github.event.client_payload.products) }}
+
+      - name: Commit and push
+        run: |
+          git config user.name "BTX3 Admin Bot"
+          git config user.email "admin@btx3.local"
+          git add data/products.json
+          git diff --staged --quiet || git commit -m "chore(admin): sync products catalog"
+          git push

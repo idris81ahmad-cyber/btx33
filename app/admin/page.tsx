@@ -55,6 +55,7 @@ export default function AdminDashboard() {
   const [newSpecValue, setNewSpecValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [storageReady, setStorageReady] = useState(true);
 
   // Protect the admin route
   useEffect(() => {
@@ -79,6 +80,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/admin/storage-status")
+      .then((r) => r.json())
+      .then((data) => setStorageReady(Boolean(data.canWrite)))
+      .catch(() => setStorageReady(false));
+  }, [session]);
 
   // Show loading while checking auth
   if (status === "loading" || !session) {
@@ -307,6 +316,23 @@ export default function AdminDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
       {/* Header */}
+      {!storageReady && (
+        <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+          <strong>Product saves are not configured on Vercel yet.</strong> Add{" "}
+          <code className="font-mono">GITHUB_TOKEN</code> (repo write access) or{" "}
+          <code className="font-mono">BLOB_READ_WRITE_TOKEN</code> (Vercel Blob store) in your{" "}
+          <a
+            href="https://vercel.com/idris81ahmad-2689s-projects/btx33/settings/environment-variables"
+            className="underline font-medium"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Vercel environment variables
+          </a>
+          , then redeploy.
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] mb-1">BTX3 ADMIN</div>
