@@ -1,0 +1,322 @@
+@import "tailwindcss";
+
+:root {
+  --font-geist-sans: var(--font-geist-sans);
+  --font-geist-mono: var(--font-geist-mono);
+  
+  /* Premium Btx3 Color Palette - Luxurious African Textile inspired */
+  --color-gold: #C5A46E;
+  --color-gold-dark: #A67C52;
+  --color-burgundy: #6B2D3C;
+  --color-burgundy-dark: #4A1F2A;
+  --color-cream: #F8F4EC;
+  --color-cream-dark: #EDE4D4;
+  --color-forest: #1E3A2F;
+  --color-forest-light: #2D4A3E;
+  --color-charcoal: #2C2522;
+  --color-white: #FFFFFF;
+  --color-offwhite: #FAF7F2;
+  
+  /* Semantic */
+  --background: var(--color-cream);
+  --foreground: var(--color-charcoal);
+  --primary: var(--color-burgundy);
+  --primary-foreground: var(--color-white);
+  --accent: var(--color-gold);
+  --accent-foreground: var(--color-charcoal);
+  --card: var(--color-white);
+  --card-foreground: var(--color-charcoal);
+  --muted: var(--color-cream-dark);
+  --muted-foreground: #6B5F54;
+  --border: #D4C9B8;
+  --input: var(--color-white);
+  --ring: var(--color-gold);
+}
+
+.dark {
+  --background: var(--color-charcoal);
+  --foreground: var(--color-cream);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Premium Typography */
+h1, h2, h3, h4 {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.text-gold {
+  color: var(--color-gold);
+}
+
+.text-burgundy {
+  color: var(--color-burgundy);
+}
+
+.btn-primary {
+  background-color: var(--color-burgundy);
+  color: var(--color-white);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-burgundy-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.btn-gold {
+  background-color: var(--color-gold);
+  color: var(--color-charcoal);
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.btn-gold:hover {
+  background-color: var(--color-gold-dark);
+  transform: translateY(-1px);
+}
+
+/* Fabric Card Styles - Premium Feel */
+.product-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  border: 1px solid var(--border);
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Image Gallery */
+.image-gallery img {
+  transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.image-gallery img:hover {
+  transform: scale(1.02);
+}
+
+/* Navbar */
+.navbar {
+  backdrop-filter: blur(12px);
+  background-color: rgba(248, 244, 236, 0.95);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Cart Sheet */
+.cart-sheet {
+  box-shadow: -10px 0 30px -15px rgb(0 0 0 / 0.25);
+}
+
+/* Form Styles */
+.input-premium {
+  border: 1px solid var(--border);
+  background-color: var(--color-white);
+  transition: all 0.2s ease;
+}
+
+.input-premium:focus {
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(197, 164, 110, 0.1);
+  outline: none;
+}
+
+/* Filter Chips */
+.filter-chip {
+  transition: all 0.15s ease;
+}
+
+.filter-chip.active {
+  background-color: var(--color-burgundy);
+  color: white;
+  border-color: var(--color-burgundy);
+}
+
+/* Toast customization for sonner if needed */
+[data-sonner-toast] {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+/* Smooth animations */
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Length selector buttons */
+.length-btn {
+  transition: all 0.15s ease;
+}
+
+.length-btn.active {
+  background-color: var(--color-burgundy);
+  color: white;
+  border-color: var(--color-burgundy);
+}
+
+/* Trust signals */
+.trust-card {
+  transition: transform 0.2s ease;
+}
+
+.trust-card:hover {
+  transform: translateY(-2px);
+}
+
+/* === UI ENHANCEMENTS: Premium Polish === */
+
+/* Refined buttons */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.25),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.btn-primary:hover::after {
+  left: 250%;
+}
+
+/* Better card and image treatment */
+.product-card {
+  will-change: transform;
+}
+
+.product-card img {
+  will-change: transform;
+}
+
+/* Enhanced image gallery on product page */
+.gallery-thumb {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gallery-thumb.active {
+  border-color: #6B2D3C !important;
+  box-shadow: 0 0 0 1px #6B2D3C;
+}
+
+.gallery-main {
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Luxury filter + pill styles */
+.filter-chip {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.filter-chip:hover:not(.active) {
+  background-color: #F8F4EC;
+  border-color: #C5A46E;
+}
+
+/* Subtle section dividers */
+.section-divider {
+  background: linear-gradient(to right, transparent, #D4C9B8, transparent);
+}
+
+/* Improved form inputs */
+.input-premium {
+  font-feature-settings: "tnum";
+}
+
+.input-premium:focus {
+  box-shadow: 0 0 0 4px rgba(197, 164, 110, 0.12);
+}
+
+/* Premium loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #F4EDE3 25%, #EDE4D4 50%, #F4EDE3 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Cart item polish */
+.cart-item {
+  transition: all 0.2s ease;
+}
+
+.cart-item:hover {
+  border-color: #C5A46E;
+}
+
+/* Quantity controls */
+.qty-control {
+  transition: background-color 0.1s ease;
+}
+
+.qty-control:active {
+  background-color: #EDE4D4;
+}
+
+/* Hero scroll indicator */
+.scroll-indicator {
+  animation: scroll-bob 2s ease-in-out infinite;
+}
+
+@keyframes scroll-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+
+/* Sale badge refinement */
+.sale-badge {
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(107, 45, 60, 0.3);
+}
+
+/* Product grid responsive refinement */
+@media (max-width: 640px) {
+  .product-grid {
+    gap: 1rem;
+  }
+}
+
+/* Checkout / Form enhancements */
+.form-section {
+  transition: all 0.2s ease;
+}
+
+.form-section:focus-within {
+  border-color: #C5A46E;
+}
+
+/* Subtle luxury pattern for certain sections */
+.luxury-bg {
+  background-image: 
+    radial-gradient(circle at 1px 1px, #D4C9B8 1px, transparent 0);
+  background-size: 22px 22px;
+  opacity: 0.35;
+}
