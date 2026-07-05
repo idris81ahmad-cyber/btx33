@@ -17,7 +17,10 @@
     "inStock": 45,
     "colorFamily": "Gold",
     "patternStyle": "Geometric",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "100% Cotton",
       "Width": "45 inches",
@@ -42,7 +45,10 @@
     "inStock": 18,
     "colorFamily": "Ivory",
     "patternStyle": "Floral",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "Swiss Voile Cord",
       "Width": "50 inches",
@@ -67,7 +73,11 @@
     "inStock": 32,
     "colorFamily": "Burgundy",
     "patternStyle": "Geometric",
-    "lengthOptions": ["5 yards", "6 yards", "10 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards",
+      "10 yards"
+    ],
     "specifications": {
       "Material": "Premium Brocade",
       "Width": "48 inches",
@@ -92,7 +102,10 @@
     "inStock": 27,
     "colorFamily": "Indigo",
     "patternStyle": "Tie-Dye",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "100% Cotton",
       "Width": "45 inches",
@@ -117,7 +130,9 @@
     "inStock": 12,
     "colorFamily": "Champagne",
     "patternStyle": "Floral",
-    "lengthOptions": ["5 yards"],
+    "lengthOptions": [
+      "5 yards"
+    ],
     "specifications": {
       "Material": "French Guipure Lace",
       "Width": "52 inches",
@@ -142,7 +157,10 @@
     "inStock": 38,
     "colorFamily": "Emerald",
     "patternStyle": "Solid",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "Silk Chiffon",
       "Width": "44 inches",
@@ -166,7 +184,11 @@
     "inStock": 65,
     "colorFamily": "Ivory",
     "patternStyle": "Solid",
-    "lengthOptions": ["5 yards", "6 yards", "10 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards",
+      "10 yards"
+    ],
     "specifications": {
       "Material": "100% Cotton Poplin",
       "Width": "45 inches",
@@ -191,7 +213,10 @@
     "inStock": 51,
     "colorFamily": "Royal Blue",
     "patternStyle": "Floral",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "100% Cotton",
       "Width": "45 inches",
@@ -216,7 +241,10 @@
     "inStock": 24,
     "colorFamily": "Ivory",
     "patternStyle": "Floral",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "Swiss Voile Lace with Gold Thread",
       "Width": "50 inches",
@@ -241,7 +269,11 @@
     "inStock": 29,
     "colorFamily": "Emerald",
     "patternStyle": "Geometric",
-    "lengthOptions": ["5 yards", "6 yards", "10 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards",
+      "10 yards"
+    ],
     "specifications": {
       "Material": "Damask / Shadda",
       "Width": "48 inches",
@@ -266,7 +298,10 @@
     "inStock": 33,
     "colorFamily": "Gold",
     "patternStyle": "Tie-Dye",
-    "lengthOptions": ["5 yards", "6 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards"
+    ],
     "specifications": {
       "Material": "100% Cotton",
       "Width": "45 inches",
@@ -291,7 +326,11 @@
     "inStock": 47,
     "colorFamily": "Ivory",
     "patternStyle": "Solid",
-    "lengthOptions": ["5 yards", "6 yards", "10 yards"],
+    "lengthOptions": [
+      "5 yards",
+      "6 yards",
+      "10 yards"
+    ],
     "specifications": {
       "Material": "Premium Voile",
       "Width": "44 inches",
