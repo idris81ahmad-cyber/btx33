@@ -337,13 +337,13 @@ export default function AdminDashboard() {
           ) : (
             <>
               Use{" "}
-              <a href="https://btx33.vercel.app/admin" className="underline font-medium">
-                btx33.vercel.app
+              <a href="https://biyora-shop.vercel.app/admin" className="underline font-medium">
+                biyora-shop.vercel.app
               </a>{" "}
               (not btx3.vercel.app). If the issue persists, confirm{" "}
               <code className="font-mono">GITHUB_TOKEN</code> is set in{" "}
               <a
-                href="https://vercel.com/idris81ahmad-2689s-projects/btx33/settings/environment-variables"
+                href="https://vercel.com/idris81ahmad-2689s-projects/biyora-shop/settings/environment-variables"
                 className="underline font-medium"
                 target="_blank"
                 rel="noreferrer"

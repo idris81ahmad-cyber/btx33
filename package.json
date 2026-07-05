@@ -1,12 +1,12 @@
 {
-  "name": "btx3",
+  "name": "biyora-shop",
   "version": "0.1.0",
   "private": true,
   "description": "BIYORA SHOP — Premium African textiles e-commerce showcasing fabrics from Kano's Kantin Kwari Market",
-  "homepage": "https://btx33.vercel.app",
+  "homepage": "https://biyora-shop.vercel.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/idris81ahmad-cyber/btx33.git"
+    "url": "https://github.com/idris81ahmad-cyber/biyora-shop.git"
   },
   "scripts": {
     "dev": "next dev --turbopack",

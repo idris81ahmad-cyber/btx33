@@ -5,7 +5,7 @@
 
 ![BIYORA SHOP Preview](public/images/ankara-premium.jpg)
 
-**Live Demo:** [btx33.vercel.app](https://btx33.vercel.app)
+**Live Demo:** [biyora-shop.vercel.app](https://biyora-shop.vercel.app)
 
 ---
 
@@ -58,8 +58,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/idris81ahmad-cyber/btx33.git
-cd btx33
+git clone https://github.com/idris81ahmad-cyber/biyora-shop.git
+cd biyora-shop
 ```
 
 ### 2. Install dependencies
@@ -88,7 +88,7 @@ npm start
 ## ðŸ“ Project Structure
 
 ```
-btx33/
+biyora-shop/
 â”œâ”€â”€ app/
 â”‚   â”œâ”€â”€ layout.tsx                 # Root layout + Navbar + Toaster
 â”‚   â”œâ”€â”€ page.tsx                   # Beautiful homepage
@@ -167,7 +167,7 @@ All products include rich descriptions, realistic specs, multiple image URLs, ra
 ## ðŸ“¦ Deployment (Vercel â€” Recommended)
 
 1. Push your code to GitHub
-2. Go to [vercel.com](https://vercel.com) â†’ New Project â†’ Import `btx33` repo
+2. Go to [vercel.com](https://vercel.com) â†’ New Project â†’ Import `biyora-shop` repo
 3. Vercel will auto-detect Next.js. Click **Deploy**
 4. Your site will be live in under 2 minutes with automatic HTTPS + edge caching
 

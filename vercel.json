@@ -1,6 +1,6 @@
 {
   "env": {
     "NEXTAUTH_SECRET": "BD4o4R2MTp5PbRAl3GPVmIdCu2Hoe1gXiLJ4bXtqOQU=",
-    "NEXTAUTH_URL": "https://btx33.vercel.app"
+    "NEXTAUTH_URL": "https://biyora-shop.vercel.app"
   }
 }

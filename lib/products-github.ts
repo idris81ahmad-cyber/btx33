@@ -1,6 +1,6 @@
 import { Product } from "@/types/product";
 
-const REPO = "idris81ahmad-cyber/btx33";
+const REPO = "idris81ahmad-cyber/biyora-shop";
 const FILE_PATH = "data/products.json";
 const BRANCH = "master";
 
