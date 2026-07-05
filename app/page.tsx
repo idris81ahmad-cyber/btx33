@@ -27,10 +27,13 @@ export default function Home() {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    fetch("/api/products")
+    fetch("/api/products", { cache: "no-store" })
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data)) setFeaturedProducts(data.slice(0, 6));
+        if (Array.isArray(data)) {
+          const newest = [...data].sort((a, b) => b.id - a.id);
+          setFeaturedProducts(newest.slice(0, 6));
+        }
       })
       .catch(() => {});
   }, []);
@@ -93,7 +96,7 @@ export default function Home() {
         <div className="flex items-end justify-between mb-8">
           <div>
             <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] font-medium mb-1">DISCOVER</div>
-            <h2 className="text-5xl tracking-[-1.8px] font-semibold">Featured Fabrics</h2>
+            <h2 className="text-5xl tracking-[-1.8px] font-semibold">Latest Arrivals</h2>
           </div>
           <Link href="/shop" className="hidden md:flex items-center gap-2 text-sm font-medium hover:text-[#6B2D3C] group">
             VIEW ALL FABRICS <ArrowRight className="group-hover:translate-x-0.5 transition" />
