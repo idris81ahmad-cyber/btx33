@@ -83,7 +83,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!session) return;
-    fetch("/api/admin/storage-status")
+    fetch("/api/admin/storage-status", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setStorageReady(Boolean(data.canWrite)))
       .catch(() => setStorageReady(false));
@@ -159,6 +159,7 @@ export default function AdminDashboard() {
       const res = await fetch("/api/admin/upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -241,6 +242,12 @@ export default function AdminDashboard() {
       toast.error("Add at least one image");
       return;
     }
+    if (form.images.some((img) => img.startsWith("data:"))) {
+      toast.error(
+        "Drag-and-drop file previews cannot be saved. Use an image URL like /images/ankara-premium.jpg instead."
+      );
+      return;
+    }
 
     setSaving(true);
 
@@ -256,12 +263,14 @@ export default function AdminDashboard() {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          credentials: "include",
         });
       } else {
         res = await fetch("/api/admin/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+          credentials: "include",
         });
       }
 
@@ -318,18 +327,32 @@ export default function AdminDashboard() {
       {/* Header */}
       {!storageReady && (
         <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950">
-          <strong>Product saves are not configured on Vercel yet.</strong> Add{" "}
-          <code className="font-mono">GITHUB_TOKEN</code> (repo write access) or{" "}
-          <code className="font-mono">BLOB_READ_WRITE_TOKEN</code> (Vercel Blob store) in your{" "}
-          <a
-            href="https://vercel.com/idris81ahmad-2689s-projects/btx33/settings/environment-variables"
-            className="underline font-medium"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Vercel environment variables
-          </a>
-          , then redeploy.
+          <strong>Product storage is read-only in this environment.</strong>{" "}
+          {typeof window !== "undefined" && window.location.hostname === "localhost" ? (
+            <>
+              For local dev, set <code className="font-mono">GITHUB_TOKEN</code> in{" "}
+              <code className="font-mono">.env.local</code> and restart{" "}
+              <code className="font-mono">npm run dev</code>.
+            </>
+          ) : (
+            <>
+              Use{" "}
+              <a href="https://btx33.vercel.app/admin" className="underline font-medium">
+                btx33.vercel.app
+              </a>{" "}
+              (not btx3.vercel.app). If the issue persists, confirm{" "}
+              <code className="font-mono">GITHUB_TOKEN</code> is set in{" "}
+              <a
+                href="https://vercel.com/idris81ahmad-2689s-projects/btx33/settings/environment-variables"
+                className="underline font-medium"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Vercel environment variables
+              </a>{" "}
+              and redeploy.
+            </>
+          )}
         </div>
       )}
 
