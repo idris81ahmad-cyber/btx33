@@ -11,6 +11,12 @@ const users = [
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
     name: "BTX3 Admin",
   },
+  {
+    id: "2",
+    username: "halifa81",
+    password: "$2b$10$NHjw7GrEcNuRFzc0ohscbelRgHmN41fJoJ55KhbQ0GoF0FaAvDRmW",
+    name: "Halifa Admin",
+  },
 ];
 
 export const authOptions: NextAuthOptions = {
