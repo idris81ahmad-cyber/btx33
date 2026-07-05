@@ -19,7 +19,12 @@ const users = [
   },
 ];
 
+const authSecret =
+  process.env.NEXTAUTH_SECRET ??
+  "BD4o4R2MTp5PbRAl3GPVmIdCu2Hoe1gXiLJ4bXtqOQU=";
+
 export const authOptions: NextAuthOptions = {
+  secret: authSecret,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -28,15 +33,16 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) return null;
+        const username = credentials?.username?.trim();
+        const password = credentials?.password;
+        if (!username || !password) return null;
 
-        const user = users.find((u) => u.username === credentials.username);
+        const user = users.find(
+          (u) => u.username.toLowerCase() === username.toLowerCase()
+        );
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
+        const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) return null;
 
         return { id: user.id, name: user.name, username: user.username } as any;

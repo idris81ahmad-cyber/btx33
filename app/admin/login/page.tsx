@@ -33,8 +33,13 @@ export default function AdminLogin() {
 
     if (result?.ok) {
       router.push("/admin");
+    } else if (result?.error === "CredentialsSignin") {
+      setError("Invalid username or password");
     } else {
-      setError("Invalid credentials");
+      setError(
+        result?.error ??
+          "Sign-in failed. If this persists, ensure NEXTAUTH_SECRET is set on the server."
+      );
     }
     setLoading(false);
   };

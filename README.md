@@ -5,7 +5,7 @@
 
 ![BTX3 Preview](public/images/ankara-premium.jpg)
 
-**Live Demo:** [btx3.vercel.app](https://btx3.vercel.app)
+**Live Demo:** [btx33.vercel.app](https://btx33.vercel.app)
 
 ---
 
