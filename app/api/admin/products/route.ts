@@ -16,7 +16,7 @@ export async function GET() {
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const products = getProducts();
+  const products = await getProducts();
   return NextResponse.json(products);
 }
 
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const slug = body.slug || body.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    const newProduct = addProduct({
+    const newProduct = await addProduct({
       ...body,
       slug,
       images: body.images || [],
@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create product';
+    const status = message.includes('read-only') || message.includes('Blob') ? 503 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

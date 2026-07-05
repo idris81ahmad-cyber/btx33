@@ -142,6 +142,25 @@ export default function AdminDashboard() {
     setForm({ ...form, images: form.images.filter((_, i) => i !== index) });
   };
 
+  const uploadImageFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      addImage(data.url);
+      toast.success("Image uploaded");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast.error(message);
+    }
+  };
+
   // Drag and drop for images (URLs or files)
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -166,16 +185,9 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Handle dropped image files → convert to data URL for preview (works without blob token)
     files.forEach((file) => {
       if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const dataUrl = ev.target?.result as string;
-          addImage(dataUrl);
-          toast.success(`Added image from file (local preview). For production use Vercel Blob.`);
-        };
-        reader.readAsDataURL(file);
+        void uploadImageFile(file);
       }
     });
   };
@@ -244,7 +256,10 @@ export default function AdminDashboard() {
         });
       }
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || (await res.text()) || "Failed to save product");
+      }
 
       toast.success(editingProduct ? "Product updated" : "Product created");
       closeModal();

@@ -9,6 +9,6 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const products = resetToDefaults();
+  const products = await resetToDefaults();
   return NextResponse.json({ success: true, count: products.length });
 }
