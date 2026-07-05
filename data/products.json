@@ -360,5 +360,28 @@
     "reviewCount": 0,
     "slug": "test-fabric-1783266894952",
     "id": 13
+  },
+  {
+    "name": "Storage Test 1783267241913",
+    "category": "Ankara Prints",
+    "price": 15000,
+    "shortDescription": "Testing storage",
+    "description": "Testing storage write",
+    "inStock": 5,
+    "colorFamily": "Gold",
+    "patternStyle": "Geometric",
+    "lengthOptions": [
+      "5 yards"
+    ],
+    "specifications": {
+      "Material": "Cotton"
+    },
+    "images": [
+      "/images/ankara-premium.jpg"
+    ],
+    "rating": 4.5,
+    "reviewCount": 0,
+    "slug": "storage-test-1783267241913",
+    "id": 14
   }
 ]
