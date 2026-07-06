@@ -8,6 +8,8 @@ import { ArrowLeft, Star, ShoppingCart, Heart } from "lucide-react";
 import type { Product } from "@/types/product";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
+import { productImageAlt } from "@/lib/image-blur";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -92,7 +94,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
           >
             <ProductImage
               src={product.images[selectedImageIndex]}
-              alt={product.name}
+              alt={productImageAlt(product.name, product.category, selectedImageIndex)}
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
@@ -108,7 +110,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                 onClick={() => setSelectedImageIndex(idx)}
                 className={`gallery-thumb relative w-20 h-20 rounded-2xl overflow-hidden border-2 transition ${selectedImageIndex === idx ? 'active border-[#6B2D3C]' : 'border-transparent hover:border-[#D4C9B8]'}`}
               >
-                <ProductImage src={img} alt="" fill sizes="80px" />
+                <ProductImage src={img} alt={productImageAlt(product.name, product.category, idx)} fill sizes="80px" />
               </button>
             ))}
           </div>
@@ -219,39 +221,52 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
         </div>
       </div>
 
-      {/* Image Lightbox */}
-      {isLightboxOpen && (
-        <div 
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
-          onClick={() => setIsLightboxOpen(false)}
-        >
-          <div className="relative max-w-[95vw] max-h-[90vh]">
-            <button 
-              onClick={() => setIsLightboxOpen(false)} 
-              className="absolute -top-3 -right-3 bg-white text-black rounded-full w-9 h-9 flex items-center justify-center shadow text-sm"
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/92 flex items-center justify-center p-4"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative max-w-[95vw] max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
             >
-              ✕
-            </button>
-            <ProductImage
-              src={product.images[selectedImageIndex]}
-              alt={product.name}
-              width={1200}
-              height={900}
-              objectFit="contain"
-              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
-            />
-            <div className="flex justify-center gap-2 mt-4">
-              {product.images.map((_, idx) => (
-                <button 
-                  key={idx} 
-                  onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(idx); }}
-                  className={`w-2.5 h-2.5 rounded-full transition ${selectedImageIndex === idx ? 'bg-white scale-125' : 'bg-white/40'}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+              <button
+                onClick={() => setIsLightboxOpen(false)}
+                className="absolute -top-3 -right-3 z-10 bg-white text-black rounded-full w-9 h-9 flex items-center justify-center shadow text-sm"
+                aria-label="Close image viewer"
+              >
+                ✕
+              </button>
+              <ProductImage
+                src={product.images[selectedImageIndex]}
+                alt={productImageAlt(product.name, product.category, selectedImageIndex)}
+                width={1200}
+                height={900}
+                objectFit="contain"
+                className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
+              />
+              <div className="flex justify-center gap-2 mt-4">
+                {product.images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImageIndex(idx)}
+                    className={`w-2.5 h-2.5 rounded-full transition ${selectedImageIndex === idx ? "bg-white scale-125" : "bg-white/40"}`}
+                    aria-label={`View image ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {relatedProducts.length > 0 && (
         <div className="mt-20 pt-12 border-t border-[#D4C9B8]">

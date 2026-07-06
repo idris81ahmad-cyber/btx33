@@ -4,7 +4,7 @@ import { list, put } from "@vercel/blob";
 import { Product } from "@/types/product";
 import {
   readProductsFromGitHub,
-  useGitHubStorage,
+  hasGitHubStorage,
   writeProductsToGitHub,
 } from "@/lib/products-github";
 
@@ -12,7 +12,7 @@ const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
 const BLOB_PATHNAME = "btx3/products.json";
 
-function useBlobStorage(): boolean {
+function hasBlobStorage(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
@@ -89,19 +89,19 @@ function writeProductsToFilesystem(products: Product[]): void {
 }
 
 export async function getProducts(): Promise<Product[]> {
-  if (useBlobStorage()) {
+  if (hasBlobStorage()) {
     const fromBlob = await readProductsFromBlob();
     if (fromBlob) return fromBlob;
   }
 
-  if (useGitHubStorage() || process.env.VERCEL) {
+  if (hasGitHubStorage() || process.env.VERCEL) {
     const fromGitHub = await readProductsFromGitHub();
     if (fromGitHub) return fromGitHub;
   }
 
   const fromFs = readProductsFromFilesystem();
   if (fromFs) {
-    if (useBlobStorage()) {
+    if (hasBlobStorage()) {
       try {
         await writeProductsToBlob(fromFs);
       } catch (e) {
@@ -119,12 +119,12 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
-  if (useBlobStorage()) {
+  if (hasBlobStorage()) {
     await writeProductsToBlob(products);
     return;
   }
 
-  if (useGitHubStorage()) {
+  if (hasGitHubStorage()) {
     await writeProductsToGitHub(products);
     return;
   }

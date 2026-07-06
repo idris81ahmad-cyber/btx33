@@ -13,7 +13,7 @@ function githubHeaders(): HeadersInit {
   };
 }
 
-export function useGitHubStorage(): boolean {
+export function hasGitHubStorage(): boolean {
   return Boolean(process.env.GITHUB_TOKEN);
 }
 

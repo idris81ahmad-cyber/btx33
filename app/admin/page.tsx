@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import type { Product } from "@/types/product";
 import { categories } from "@/lib/products";
+import ProductImage from "@/components/ProductImage";
 
 interface ProductForm {
   name: string;
@@ -297,7 +298,7 @@ export default function AdminDashboard() {
       if (!res.ok) throw new Error("Delete failed");
       toast.success("Product deleted");
       await loadProducts();
-    } catch (e) {
+    } catch {
       toast.error("Failed to delete product");
     }
   };
@@ -531,7 +532,7 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {form.images.map((img, idx) => (
                       <div key={idx} className="group relative border rounded-2xl overflow-hidden aspect-video bg-[#F8F4EC]">
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <ProductImage src={img} alt={`Product preview ${idx + 1}`} fill sizes="200px" />
                         <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">×</button>
                       </div>
                     ))}

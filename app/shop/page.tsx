@@ -70,7 +70,7 @@ function ShopContent() {
     }
 
     return result;
-  }, [searchQuery, selectedCategory, selectedColor, selectedPattern, priceRange, sortBy]);
+  }, [allProducts, searchQuery, selectedCategory, selectedColor, selectedPattern, priceRange, sortBy]);
 
   const clearFilters = () => {
     setSearchQuery("");

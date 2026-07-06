@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Star, ShoppingCart } from "lucide-react";
 import ProductImage from "@/components/ProductImage";
+import { productImageAlt } from "@/lib/image-blur";
 import { Product } from "@/types/product";
 import { useCartStore } from "@/lib/cart-store";
 import { toast } from "sonner";
@@ -39,7 +40,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="relative aspect-[4/3.2] bg-[#F4EDE3] overflow-hidden">
           <ProductImage
             src={product.images[0]}
-            alt={product.name}
+            alt={productImageAlt(product.name, product.category)}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 16vw"
             className="group-hover:scale-[1.06] transition-transform duration-700"

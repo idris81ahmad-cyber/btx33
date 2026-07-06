@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -12,9 +13,10 @@ const nextConfig: NextConfig = {
         hostname: "*.public.blob.vercel-storage.com",
       },
     ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [64, 96, 128, 256, 384],
   },
-  // ESLint is now configured via .eslintrc.json
-  // ignoreDuringBuilds is no longer supported in next.config.ts in newer Next.js
+  poweredByHeader: false,
 };
 
 export default nextConfig;

@@ -1,6 +1,11 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "regions": ["cdg1"],
   "env": {
-    "NEXTAUTH_SECRET": "BD4o4R2MTp5PbRAl3GPVmIdCu2Hoe1gXiLJ4bXtqOQU=",
-    "NEXTAUTH_URL": "https://biyora-shop.vercel.app"
+    "NEXTAUTH_URL": "https://biyora-shop.vercel.app",
+    "NEXT_PUBLIC_SITE_URL": "https://biyora-shop.vercel.app"
   }
 }
