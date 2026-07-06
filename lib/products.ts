@@ -17,7 +17,21 @@ export interface Product {
   specifications: Record<string, string>;
 }
 
-export const categories = ["All Categories", "Ankara Prints", "Premium Lace", "Brocade & Damask", "Adire & Tie-Dye", "Silk, Chiffon & Voile"] as const;
+export const fabricCategories = [
+  "Ankara Prints",
+  "Premium Lace",
+  "Brocade & Damask",
+  "Adire & Tie-Dye",
+  "Silk, Chiffon & Voile",
+  "Plain & Solid Premium Cottons",
+  "Shadda & Atiku",
+] as const;
+
+export const categories = ["All Categories", ...fabricCategories] as const;
+
+export function categoryShopHref(category: string) {
+  return `/shop?category=${encodeURIComponent(category)}`;
+}
 
 export const colorFamilies = ["All Colors", "Gold", "Burgundy", "Indigo", "Ivory", "Emerald", "Royal Blue", "Champagne"] as const;
 
@@ -253,7 +267,7 @@ export const products: Product[] = [
     id: 10,
     slug: "deep-green-damask-shadda",
     name: "Deep Green Damask Shadda",
-    category: "Brocade & Damask",
+    category: "Shadda & Atiku",
     price: 38000,
     images: [
       "/images/royal-gold-brocade.jpg",

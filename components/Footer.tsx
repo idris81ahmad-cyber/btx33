@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { fabricCategories, categoryShopHref } from "@/lib/products";
 
 export default function Footer() {
   return (
@@ -24,9 +25,11 @@ export default function Footer() {
           <div className="font-semibold text-white mb-4 tracking-wider text-sm">EXPLORE</div>
           <div className="space-y-2.5 text-sm">
             <Link href="/shop" className="block hover:text-[#C5A46E] transition">All Fabrics</Link>
-            <Link href="/shop?category=Ankara+Prints" className="block hover:text-[#C5A46E] transition">Ankara Prints</Link>
-            <Link href="/shop?category=Premium+Lace" className="block hover:text-[#C5A46E] transition">Premium Lace</Link>
-            <Link href="/shop?category=Brocade+%26+Damask" className="block hover:text-[#C5A46E] transition">Brocade &amp; Damask</Link>
+            {fabricCategories.map((category) => (
+              <Link key={category} href={categoryShopHref(category)} className="block hover:text-[#C5A46E] transition">
+                {category}
+              </Link>
+            ))}
           </div>
         </div>
 

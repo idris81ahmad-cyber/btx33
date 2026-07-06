@@ -5,16 +5,8 @@ import { ArrowRight, Award, Truck, ShieldCheck, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/types/product";
-import { useEffect, useState } from "react";
-
-const categories = [
-  { name: "Ankara Prints", count: 2, href: "/shop?category=Ankara+Prints" },
-  { name: "Premium Lace", count: 3, href: "/shop?category=Premium+Lace" },
-  { name: "Brocade & Damask", count: 2, href: "/shop?category=Brocade+%26+Damask" },
-  { name: "Adire & Tie-Dye", count: 2, href: "/shop?category=Adire+%26+Tie-Dye" },
-  { name: "Silk, Chiffon & Voile", count: 2, href: "/shop?category=Silk%2C+Chiffon+%26+Voile" },
-  { name: "Plain & Solid Cottons", count: 1, href: "/shop?category=Plain+%26+Solid+Premium+Cottons" },
-];
+import { fabricCategories, categoryShopHref } from "@/lib/products";
+import { useEffect, useMemo, useState } from "react";
 
 const trustSignals = [
   { icon: Award, title: "Curated Quality", desc: "Hand-selected from the best of Kantin Kwari" },
@@ -24,19 +16,33 @@ const trustSignals = [
 ];
 
 export default function Home() {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
 
   useEffect(() => {
     fetch("/api/products", { cache: "no-store" })
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const newest = [...data].sort((a, b) => b.id - a.id);
-          setFeaturedProducts(newest.slice(0, 6));
+          setAllProducts(data);
         }
       })
       .catch(() => {});
   }, []);
+
+  const featuredProducts = useMemo(
+    () => [...allProducts].sort((a, b) => b.id - a.id).slice(0, 6),
+    [allProducts],
+  );
+
+  const categories = useMemo(
+    () =>
+      fabricCategories.map((name) => ({
+        name,
+        count: allProducts.filter((p) => p.category === name).length,
+        href: categoryShopHref(name),
+      })),
+    [allProducts],
+  );
 
   return (
     <div className="overflow-hidden">
@@ -144,7 +150,7 @@ export default function Home() {
             <h3 className="text-4xl tracking-[-1.5px] font-semibold">Iconic Textile Categories</h3>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {categories.map((cat, idx) => (
               <Link 
                 key={idx} 
