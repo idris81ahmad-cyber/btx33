@@ -4,14 +4,15 @@ import Link from "next/link";
 import { ShoppingCart, Menu, X, Search, User } from "lucide-react";
 import { useState } from "react";
 import { useCartStore } from "@/lib/cart-store";
+import { useUIStore } from "@/lib/ui-store";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { items } = useCartStore();
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const cartCount = useCartStore((s) => s.getTotalItems());
+  const setCartDrawerOpen = useUIStore((s) => s.setCartDrawerOpen);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -79,15 +80,17 @@ export default function Navbar() {
             <User className="w-5 h-5 text-[#6B5F54]" />
           </button>
 
-          {/* Cart */}
-          <Link 
-            href="/cart" 
+          {/* Cart drawer */}
+          <button
+            type="button"
+            onClick={() => setCartDrawerOpen(true)}
             className="relative flex items-center justify-center p-2.5 rounded-full hover:bg-white/60 transition-all active:scale-95 group"
+            aria-label="Open cart"
           >
             <ShoppingCart className="w-5 h-5 text-[#2C2522] group-hover:scale-105 transition" />
             <AnimatePresence>
               {cartCount > 0 && (
-                <motion.div 
+                <motion.div
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.6, opacity: 0 }}
@@ -97,7 +100,7 @@ export default function Navbar() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </Link>
+          </button>
 
           {/* Mobile Menu Button */}
           <button 

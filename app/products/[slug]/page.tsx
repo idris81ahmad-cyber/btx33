@@ -4,12 +4,15 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProductImage from "@/components/ProductImage";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Star, ShoppingCart, Heart } from "lucide-react";
+import { ArrowLeft, Star, ShoppingCart } from "lucide-react";
 import type { Product } from "@/types/product";
-import { useCartStore } from "@/lib/cart-store";
-import { toast } from "sonner";
 import { productImageAlt } from "@/lib/image-blur";
 import { motion, AnimatePresence } from "framer-motion";
+import WishlistButton from "@/components/WishlistButton";
+import RecentlyViewed from "@/components/RecentlyViewed";
+import { addToCartWithFeedback } from "@/lib/add-to-cart";
+import { addRecentlyViewed } from "@/lib/recently-viewed";
+import { getSmartRelatedProducts } from "@/lib/related-products";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -32,10 +35,8 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             return;
           }
           setProduct(found);
-          const related = list
-            .filter((p) => p.category === found.category && p.id !== found.id)
-            .slice(0, 4);
-          setRelatedProducts(related);
+          addRecentlyViewed(found);
+          setRelatedProducts(getSmartRelatedProducts(found, list, 4));
           setLoading(false);
         })
         .catch(() => {
@@ -56,28 +57,21 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const { addToCart } = useCartStore();
 
   const currentPrice = product.salePrice || product.price;
   const totalPrice = currentPrice * quantity;
 
-  const handleAddToCart = () => {
-    // Support multi-quantity (calls add multiple times for demo)
-    for (let i = 0; i < quantity; i++) {
-      addToCart(product, selectedLength);
-    }
-    
-    toast.success(`Added to cart`, {
-      description: `${product.name} • ${selectedLength} × ${quantity} — ₦${(currentPrice * quantity).toLocaleString()}`,
-      action: {
-        label: "View Cart",
-        onClick: () => (window.location.href = "/cart"),
-      },
+  const handleAddToCart = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    addToCartWithFeedback({
+      product,
+      length: selectedLength,
+      quantity,
+      imageRect: e?.currentTarget.getBoundingClientRect(),
     });
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
+    <div className="max-w-7xl mx-auto px-6 py-10 pb-28 lg:pb-10">
       <div className="flex items-center gap-2 text-sm mb-8 text-[#6B5F54]">
         <Link href="/shop" className="hover:text-[#6B2D3C] flex items-center gap-1">
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Shop
@@ -89,7 +83,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
       <div className="grid lg:grid-cols-2 gap-x-16 gap-y-10">
         <div>
           <div 
-            className="gallery-main aspect-[4/3.15] rounded-3xl overflow-hidden border border-[#D4C9B8] bg-[#F4EDE3] relative cursor-zoom-in group"
+            className="gallery-main aspect-[4/3.15] rounded-3xl overflow-hidden border border-[#D4C9B8] bg-[#F4EDE3] relative cursor-zoom-in group fabric-texture-hover"
             onClick={() => setIsLightboxOpen(true)}
           >
             <ProductImage
@@ -122,9 +116,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
               <div className="uppercase tracking-[2px] text-xs text-[#C5A46E]">{product.category}</div>
               <h1 className="text-5xl tracking-[-1.8px] font-semibold leading-none mt-1 mb-3">{product.name}</h1>
             </div>
-            <button className="p-3 text-[#6B5F54] hover:text-[#6B2D3C]">
-              <Heart className="w-6 h-6" />
-            </button>
+            <WishlistButton product={product} />
           </div>
 
           <div className="flex items-center gap-3 mb-6">
@@ -173,9 +165,10 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
               </div>
             </div>
 
-            <button 
+            <button
+              type="button"
               onClick={handleAddToCart}
-              className="btn-primary flex-1 flex items-center justify-center gap-3 py-[17px] text-lg rounded-2xl font-medium mt-6"
+              className="btn-primary flex-1 max-lg:hidden flex items-center justify-center gap-3 py-[17px] text-lg rounded-2xl font-medium self-end"
             >
               <ShoppingCart className="w-5 h-5" /> 
               ADD TO CART — ₦{totalPrice.toLocaleString()}
@@ -268,12 +261,14 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
         )}
       </AnimatePresence>
 
+      <RecentlyViewed excludeId={product.id} />
+
       {relatedProducts.length > 0 && (
-        <div className="mt-20 pt-12 border-t border-[#D4C9B8]">
+        <div className="mt-12 pt-12 border-t border-[#D4C9B8]">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <div className="text-xs tracking-[2px] text-[#C5A46E]">YOU MAY ALSO LOVE</div>
-              <h3 className="text-3xl tracking-tight font-semibold">Similar Fabrics</h3>
+              <div className="text-xs tracking-[2px] text-[#C5A46E]">CURATED PAIRINGS</div>
+              <h3 className="text-3xl tracking-tight font-semibold">Complements &amp; Similar Fabrics</h3>
             </div>
             <Link href="/shop" className="text-sm hover:underline">Browse more →</Link>
           </div>
@@ -284,7 +279,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <ProductImage
                       src={related.images[0]}
-                      alt={related.name}
+                      alt={productImageAlt(related.name, related.category)}
                       fill
                       sizes="(max-width: 768px) 50vw, 25vw"
                       className="group-hover:scale-[1.04] transition-transform duration-500"
@@ -301,6 +296,23 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
           </div>
         </div>
       )}
+
+      {/* Mobile sticky add-to-cart */}
+      <div className="lg:hidden fixed bottom-16 inset-x-0 z-30 px-4 pb-2">
+        <div className="bg-white/95 backdrop-blur-md border border-[#D4C9B8] rounded-2xl shadow-lg flex items-center gap-3 p-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-mono font-semibold text-lg">₦{totalPrice.toLocaleString()}</div>
+            <div className="text-xs text-[#6B5F54] truncate">{selectedLength} × {quantity}</div>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className="btn-primary flex items-center gap-2 px-6 py-3.5 rounded-xl font-medium shrink-0"
+          >
+            <ShoppingCart className="w-4 h-4" /> Add to cart
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

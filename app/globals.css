@@ -331,6 +331,46 @@ h1, h2, h3, h4 {
   background-color: #EDE4D4;
 }
 
+/* Fabric texture micro-interactions */
+.fabric-texture {
+  background-image: radial-gradient(circle at 1px 1px, rgba(107, 45, 60, 0.04) 1px, transparent 0);
+  background-size: 4px 4px;
+}
+
+.fabric-texture-hover {
+  position: relative;
+}
+
+.fabric-texture-hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(197, 164, 110, 0.06) 3px,
+    rgba(197, 164, 110, 0.06) 4px
+  );
+  pointer-events: none;
+}
+
+.fabric-texture-hover:hover::after {
+  opacity: 1;
+}
+
+.fabric-weave-overlay {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.08) 2px,
+    rgba(255, 255, 255, 0.08) 3px
+  );
+}
+
 /* Hero scroll indicator */
 .scroll-indicator {
   animation: scroll-bob 2s ease-in-out infinite;

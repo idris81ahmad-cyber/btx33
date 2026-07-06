@@ -3,11 +3,13 @@
 import Link from "next/link";
 import ProductImage from "@/components/ProductImage";
 import { useCartStore } from "@/lib/cart-store";
-import { Trash2, Plus, Minus, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, Heart } from "lucide-react";
 import { toast } from "sonner";
+import { useWishlistStore } from "@/lib/wishlist-store";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCartStore();
+  const addToWishlist = useWishlistStore((s) => s.add);
   const total = getTotalPrice();
 
   if (items.length === 0) {
@@ -78,15 +80,30 @@ export default function CartPage() {
                       </button>
                     </div>
 
-                    <button 
-                      onClick={() => {
-                        removeFromCart(item.id, item.selectedLength);
-                        toast.error("Item removed from cart");
-                      }}
-                      className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 px-3 py-2"
-                    >
-                      <Trash2 className="w-4 h-4" /> REMOVE
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const { quantity: _q, selectedLength: _l, currentPrice: _p, ...product } = item;
+                          addToWishlist(product);
+                          removeFromCart(item.id, item.selectedLength);
+                          toast.success("Saved for later");
+                        }}
+                        className="flex items-center gap-1 text-xs text-[#6B5F54] hover:text-[#6B2D3C] px-2 py-2"
+                      >
+                        <Heart className="w-3.5 h-3.5" /> SAVE
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeFromCart(item.id, item.selectedLength);
+                          toast.error("Item removed from cart");
+                        }}
+                        className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 px-2 py-2"
+                      >
+                        <Trash2 className="w-4 h-4" /> REMOVE
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

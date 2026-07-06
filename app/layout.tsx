@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Providers } from "./providers";
 import { OrganizationJsonLd } from "@/components/seo/JsonLd";
+import UXProviders from "@/components/UXProviders";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
@@ -64,7 +65,8 @@ export default function RootLayout({
         <OrganizationJsonLd />
         <Providers>
           <Navbar />
-          <main className="min-h-[calc(100vh-200px)]">{children}</main>
+          <main className="min-h-[calc(100vh-200px)] pb-16 md:pb-0">{children}</main>
+          <UXProviders />
           <Footer />
           <Toaster 
             position="top-center" 

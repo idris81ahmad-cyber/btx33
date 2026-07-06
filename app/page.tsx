@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/types/product";
 import { fabricCategories, categoryShopHref } from "@/lib/products";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import { useEffect, useMemo, useState } from "react";
 
 const trustSignals = [
@@ -183,6 +184,11 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Recently viewed */}
+      <section className="max-w-7xl mx-auto px-6 pb-8">
+        <RecentlyViewed />
       </section>
 
       {/* Newsletter */}
