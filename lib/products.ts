@@ -25,6 +25,7 @@ export const fabricCategories = [
   "Silk, Chiffon & Voile",
   "Plain & Solid Premium Cottons",
   "Shadda & Atiku",
+  "Bazin",
 ] as const;
 
 export const categories = ["All Categories", ...fabricCategories] as const;
