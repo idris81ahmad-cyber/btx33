@@ -317,7 +317,7 @@ export default function AdminDashboard() {
 
     setSaving(true);
 
-    const payload: any = {
+    const payload: ProductForm & { slug: string } = {
       ...form,
       slug: editingProduct?.slug || form.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
     };
@@ -348,8 +348,9 @@ export default function AdminDashboard() {
       toast.success(editingProduct ? "Product updated" : "Product created");
       closeModal();
       await loadProducts();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save product");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save product";
+      toast.error(message);
     } finally {
       setSaving(false);
     }

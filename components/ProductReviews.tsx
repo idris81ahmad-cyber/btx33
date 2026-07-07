@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Star, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,8 @@ export default function ProductReviews({ productId, fallbackRating, fallbackCoun
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ authorName: "", rating: 5, title: "", body: "" });
 
-  const loadReviews = () => {
+  const loadReviews = useCallback(() => {
+    setLoading(true);
     fetch(`/api/reviews?productId=${productId}`)
       .then((r) => r.json())
       .then((data) => {
@@ -40,11 +41,11 @@ export default function ProductReviews({ productId, fallbackRating, fallbackCoun
         setCount(data.count ?? fallbackCount);
       })
       .finally(() => setLoading(false));
-  };
+  }, [productId, fallbackRating, fallbackCount]);
 
   useEffect(() => {
     loadReviews();
-  }, [productId]);
+  }, [loadReviews]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
