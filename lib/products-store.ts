@@ -7,6 +7,14 @@ import {
   hasGitHubStorage,
   writeProductsToGitHub,
 } from "@/lib/products-github";
+import { hasDatabase } from "@/lib/db";
+import {
+  getProductsFromDb,
+  seedProductsToDb,
+  upsertProductInDb,
+  deleteProductFromDb,
+  updateStockInDb,
+} from "@/lib/db/products";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
@@ -88,7 +96,7 @@ function writeProductsToFilesystem(products: Product[]): void {
   fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), "utf-8");
 }
 
-export async function getProducts(): Promise<Product[]> {
+async function getProductsLegacy(): Promise<Product[]> {
   if (hasBlobStorage()) {
     const fromBlob = await readProductsFromBlob();
     if (fromBlob) return fromBlob;
@@ -116,6 +124,18 @@ export async function getProducts(): Promise<Product[]> {
     await saveProducts(defaults);
   }
   return defaults;
+}
+
+export async function getProducts(): Promise<Product[]> {
+  if (hasDatabase()) {
+    const fromDb = await getProductsFromDb();
+    if (fromDb && fromDb.length > 0) return fromDb;
+    const legacy = await getProductsLegacy();
+    await seedProductsToDb(legacy);
+    const seeded = await getProductsFromDb();
+    if (seeded && seeded.length > 0) return seeded;
+  }
+  return getProductsLegacy();
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
@@ -167,12 +187,29 @@ export async function updateProduct(
   if (index === -1) return null;
 
   const updated = { ...all[index], ...updates } as Product;
+  if (hasDatabase()) {
+    const dbResult = await upsertProductInDb(updated);
+    if (dbResult) return dbResult;
+  }
   all[index] = updated;
   await saveProducts(all);
   return updated;
 }
 
+export async function updateProductStock(id: number, inStock: number): Promise<boolean> {
+  if (hasDatabase()) {
+    const ok = await updateStockInDb(id, inStock);
+    if (ok) return true;
+  }
+  const result = await updateProduct(id, { inStock });
+  return result !== null;
+}
+
 export async function deleteProduct(id: number): Promise<boolean> {
+  if (hasDatabase()) {
+    const ok = await deleteProductFromDb(id);
+    if (ok) return true;
+  }
   const all = await getProducts();
   const filtered = all.filter((p) => p.id !== id);
   if (filtered.length === all.length) return false;

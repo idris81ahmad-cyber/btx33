@@ -111,11 +111,48 @@ export default function CheckoutPage() {
     toast.success("Coupon applied", { description: result.coupon.label });
   };
 
-  const onSubmit = async (_data: CheckoutForm) => {
+  const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1650));
       const orderNumber = "BIYORA-" + Date.now().toString().slice(-8);
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNumber,
+          email: data.email,
+          fullName: data.fullName,
+          phone: data.phone,
+          items: items.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            slug: item.slug,
+            category: item.category,
+            image: item.images[0],
+            selectedLength: item.selectedLength,
+            quantity: item.quantity,
+            unitPrice: item.currentPrice,
+            lineTotal: item.currentPrice * item.quantity,
+          })),
+          shipping: {
+            address: data.address,
+            city: data.city,
+            state: data.state,
+            postalCode: data.postalCode,
+          },
+          subtotal,
+          shippingFee: shipping.fee,
+          discount,
+          total,
+          paymentMethod: data.paymentMethod,
+          notes: data.notes,
+          couponCode: appliedCoupon?.code,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Order failed");
+      }
       clearCart();
       try {
         const confettiModule = await import("canvas-confetti");

@@ -13,6 +13,7 @@ import RecentlyViewed from "@/components/RecentlyViewed";
 import { addToCartWithFeedback } from "@/lib/add-to-cart";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
 import { getSmartRelatedProducts } from "@/lib/related-products";
+import ProductReviews from "@/components/ProductReviews";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -260,6 +261,12 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ProductReviews
+        productId={product.id}
+        fallbackRating={product.rating}
+        fallbackCount={product.reviewCount}
+      />
 
       <RecentlyViewed excludeId={product.id} />
 

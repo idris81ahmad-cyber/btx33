@@ -1,6 +1,6 @@
 "use client";
 
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -32,6 +32,14 @@ export default function AdminLogin() {
     });
 
     if (result?.ok) {
+      const res = await fetch("/api/auth/session");
+      const sess = await res.json();
+      if (sess?.user?.role !== "admin") {
+        await signOut({ redirect: false });
+        setError("This account does not have admin access.");
+        setLoading(false);
+        return;
+      }
       router.push("/admin");
     } else if (result?.error === "CredentialsSignin") {
       setError("Invalid username or password");

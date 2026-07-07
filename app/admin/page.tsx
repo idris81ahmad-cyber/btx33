@@ -58,13 +58,78 @@ export default function AdminDashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [storageReady, setStorageReady] = useState(true);
 
-  // Protect the admin route
+  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const [orders, setOrders] = useState<Array<{
+    orderNumber: string;
+    fullName: string;
+    email: string;
+    total: number;
+    status: string;
+    createdAt: string;
+    items: { name: string; quantity: number }[];
+  }>>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
       router.push("/admin/login");
+      return;
+    }
+    if (session.user.role !== "admin") {
+      router.replace("/account");
     }
   }, [session, status, router]);
+
+  const loadOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch("/api/admin/orders", { credentials: "include" });
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : data.orders ?? []);
+    } catch {
+      toast.error("Failed to load orders");
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "orders" && session?.user?.role === "admin") {
+      loadOrders();
+    }
+  }, [activeTab, session]);
+
+  const updateOrderStatus = async (orderNumber: string, status: string) => {
+    const res = await fetch("/api/admin/orders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ orderNumber, status }),
+    });
+    if (res.ok) {
+      toast.success(`Order ${orderNumber} → ${status}`);
+      loadOrders();
+    } else {
+      toast.error("Failed to update order");
+    }
+  };
+
+  const quickStockUpdate = async (product: Product, delta: number) => {
+    const newStock = Math.max(0, product.inStock + delta);
+    const res = await fetch(`/api/admin/products/${product.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...product, inStock: newStock }),
+    });
+    if (res.ok) {
+      toast.success(`Stock updated: ${newStock}`);
+      await loadProducts();
+    } else {
+      toast.error("Stock update failed");
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -357,30 +422,60 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition ${activeTab === "products" ? "bg-[#6B2D3C] text-white" : "border border-[#D4C9B8] hover:bg-white/50"}`}
+        >
+          Products
+        </button>
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition ${activeTab === "orders" ? "bg-[#6B2D3C] text-white" : "border border-[#D4C9B8] hover:bg-white/50"}`}
+        >
+          Orders ({orders.length || "—"})
+        </button>
+      </div>
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] mb-1">BIYORA SHOP ADMIN</div>
-          <h1 className="text-4xl font-semibold tracking-[-1.5px]">Product Management</h1>
-          <p className="text-[#6B5F54] mt-1">Full CRUD • Image management • Live updates to shop</p>
+          <h1 className="text-4xl font-semibold tracking-[-1.5px]">
+            {activeTab === "products" ? "Product Management" : "Order Management"}
+          </h1>
+          <p className="text-[#6B5F54] mt-1">
+            {activeTab === "products"
+              ? "Full CRUD • Image management • Live updates to shop"
+              : "View orders • Update status • Track fulfilment"}
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link href="/" className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 transition">
             View Live Site
           </Link>
-          <button onClick={openAdd} className="btn-primary px-5 py-2 text-sm rounded-xl">
-            + Add Fabric
-          </button>
-          <button onClick={handleReset} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50">
-            Reset Defaults
-          </button>
+          {activeTab === "products" && (
+            <>
+              <button onClick={openAdd} className="btn-primary px-5 py-2 text-sm rounded-xl">
+                + Add Fabric
+              </button>
+              <button onClick={handleReset} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50">
+                Reset Defaults
+              </button>
+            </>
+          )}
+          {activeTab === "orders" && (
+            <button onClick={loadOrders} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50">
+              Refresh
+            </button>
+          )}
           <button onClick={() => signOut({ callbackUrl: "/admin/login" })} className="px-5 py-2 text-sm bg-[#6B2D3C] text-white rounded-xl hover:bg-[#5a2532]">
             Sign Out
           </button>
         </div>
       </div>
 
-      {/* Stats */}
+      {activeTab === "products" && (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
           <div className="text-sm text-[#6B5F54]">Total Fabrics</div>
@@ -396,11 +491,68 @@ export default function AdminDashboard() {
         </div>
         <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
           <div className="text-sm text-[#6B5F54]">Categories</div>
-          <div className="text-4xl font-semibold mt-1 tracking-tight">6</div>
+          <div className="text-4xl font-semibold mt-1 tracking-tight">8</div>
         </div>
       </div>
+      )}
 
-      {/* Products Table */}
+      {activeTab === "orders" && (
+        <div className="bg-white border border-[#D4C9B8] rounded-3xl overflow-hidden mb-10">
+          <div className="px-6 py-4 border-b">
+            <h2 className="font-semibold text-xl tracking-tight">Recent Orders</h2>
+          </div>
+          {ordersLoading ? (
+            <div className="p-12 text-center text-[#6B5F54]">Loading orders...</div>
+          ) : orders.length === 0 ? (
+            <div className="p-12 text-center text-[#6B5F54]">
+              No orders yet. Connect Vercel Postgres to persist orders, or place a test order on the live site.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-[#F8F4EC] text-[#6B5F54]">
+                  <tr>
+                    <th className="text-left px-6 py-3">Order</th>
+                    <th className="text-left px-6 py-3">Customer</th>
+                    <th className="text-right px-6 py-3">Total</th>
+                    <th className="text-left px-6 py-3">Status</th>
+                    <th className="text-left px-6 py-3">Date</th>
+                    <th className="text-center px-6 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#EDE6D9]">
+                  {orders.map((o) => (
+                    <tr key={o.orderNumber} className="hover:bg-[#F8F4EC]/60">
+                      <td className="px-6 py-4 font-mono font-medium">{o.orderNumber}</td>
+                      <td className="px-6 py-4">
+                        <div>{o.fullName}</div>
+                        <div className="text-xs text-[#6B5F54]">{o.email}</div>
+                      </td>
+                      <td className="px-6 py-4 text-right font-mono">₦{o.total?.toLocaleString()}</td>
+                      <td className="px-6 py-4 capitalize">{o.status}</td>
+                      <td className="px-6 py-4 text-[#6B5F54]">{new Date(o.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={o.status}
+                          onChange={(e) => updateOrderStatus(o.orderNumber, e.target.value)}
+                          className="input-premium text-xs rounded-xl px-2 py-1"
+                        >
+                          {["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "products" && (
+      <>
       <div className="bg-white border border-[#D4C9B8] rounded-3xl overflow-hidden">
         <div className="px-6 py-4 border-b flex justify-between items-center">
           <h2 className="font-semibold text-xl tracking-tight">All Fabrics ({products.length})</h2>
@@ -436,7 +588,11 @@ export default function AdminDashboard() {
                       {p.salePrice && <span className="ml-2 text-xs line-through text-[#6B5F54]">₦{p.salePrice}</span>}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className={p.inStock > 15 ? "text-emerald-600" : "text-amber-600"}>{p.inStock}</span>
+                      <div className="flex items-center justify-end gap-1">
+                        <button type="button" onClick={() => quickStockUpdate(p, -1)} className="text-xs px-2 py-0.5 border rounded-lg">−</button>
+                        <span className={p.inStock > 15 ? "text-emerald-600 min-w-[2ch]" : "text-amber-600 min-w-[2ch]"}>{p.inStock}</span>
+                        <button type="button" onClick={() => quickStockUpdate(p, 1)} className="text-xs px-2 py-0.5 border rounded-lg">+</button>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
@@ -453,8 +609,10 @@ export default function AdminDashboard() {
       </div>
 
       <div className="mt-4 text-xs text-[#6B5F54]">
-        Changes made here are saved to <code>data/products.json</code> and reflected on the shop immediately (in dev).
+        Changes sync to Vercel Blob / GitHub storage and reflect on the shop immediately.
       </div>
+      </>
+      )}
 
       {/* Add / Edit Modal */}
       {showModal && (

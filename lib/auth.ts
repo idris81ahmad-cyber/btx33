@@ -1,25 +1,29 @@
-import NextAuth from "next-auth";
+import NextAuth, { getServerSession } from "next-auth";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { getUserByEmail } from "@/lib/db/users";
 
 if (!process.env.NEXTAUTH_URL && process.env.VERCEL_URL) {
   process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
 }
 
-const users = [
+const legacyAdmins = [
   {
-    id: "1",
+    id: "admin-1",
+    email: "admin@biyorashop.com",
     username: "admin",
-    // hashed "password"  (use bcrypt to generate new ones for prod)
     password: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
     name: "BIYORA SHOP Admin",
+    role: "admin" as const,
   },
   {
-    id: "2",
+    id: "admin-2",
+    email: "halifa@biyorashop.com",
     username: "halifa81",
     password: "$2b$10$NHjw7GrEcNuRFzc0ohscbelRgHmN41fJoJ55KhbQ0GoF0FaAvDRmW",
     name: "Halifa Admin",
+    role: "admin" as const,
   },
 ];
 
@@ -33,45 +37,90 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
+        email: { label: "Email", type: "email" },
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const username = credentials?.username?.trim();
+        const identifier = credentials?.email?.trim() || credentials?.username?.trim();
         const password = credentials?.password;
-        if (!username || !password) return null;
+        if (!identifier || !password) return null;
 
-        const user = users.find(
-          (u) => u.username.toLowerCase() === username.toLowerCase()
-        );
-        if (!user) return null;
+        // DB customer/admin
+        const dbUser = await getUserByEmail(identifier.includes("@") ? identifier : `${identifier}@local.biyora`);
+        if (!dbUser) {
+          const byUsername = legacyAdmins.find(
+            (u) => u.username.toLowerCase() === identifier.toLowerCase() || u.email === identifier.toLowerCase(),
+          );
+          if (byUsername) {
+            const valid = await bcrypt.compare(password, byUsername.password);
+            if (!valid) return null;
+            return {
+              id: byUsername.id,
+              name: byUsername.name,
+              email: byUsername.email,
+              role: byUsername.role,
+            };
+          }
+        } else {
+          const valid = await bcrypt.compare(password, dbUser.passwordHash);
+          if (!valid) return null;
+          return {
+            id: String(dbUser.id),
+            name: dbUser.name,
+            email: dbUser.email,
+            role: dbUser.role,
+          };
+        }
 
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) return null;
+        // Legacy admin fallback by username
+        const legacy = legacyAdmins.find((u) => u.username.toLowerCase() === identifier.toLowerCase());
+        if (legacy) {
+          const valid = await bcrypt.compare(password, legacy.password);
+          if (!valid) return null;
+          return { id: legacy.id, name: legacy.name, email: legacy.email, role: legacy.role };
+        }
 
-        return { id: user.id, name: user.name, username: user.username } as any;
+        return null;
       },
     }),
   ],
   pages: {
-    signIn: "/admin/login",
+    signIn: "/login",
   },
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) (token as any).username = (user as any).username;
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.email = user.email ?? undefined;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).username = (token as any).username;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = (token.role as "admin" | "customer") ?? "customer";
+        session.user.email = token.email as string;
+      }
       return session;
     },
   },
 };
 
-// For App Router route handlers
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
+export { getServerSession };
 
-// For server-side session checks in API routes
-export { getServerSession } from "next-auth";
+export async function requireAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "admin") return null;
+  return session;
+}
+
+export async function requireCustomer() {
+  const session = await getServerSession(authOptions);
+  if (!session) return null;
+  return session;
+}

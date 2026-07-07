@@ -37,6 +37,9 @@ export default function Footer() {
           <div className="font-semibold text-white mb-4 tracking-wider text-sm">COMPANY</div>
           <div className="space-y-2.5 text-sm">
             <Link href="/about" className="block hover:text-[#C5A46E] transition">Our Story</Link>
+            <Link href="/journal" className="block hover:text-[#C5A46E] transition">Fabric Journal</Link>
+            <Link href="/wholesale" className="block hover:text-[#C5A46E] transition">Wholesale / B2B</Link>
+            <Link href="/calculator" className="block hover:text-[#C5A46E] transition">Fabric Calculator</Link>
             <Link href="/contact" className="block hover:text-[#C5A46E] transition">Contact Us</Link>
             <Link href="/faq" className="block hover:text-[#C5A46E] transition">FAQ</Link>
             <a href="#careers" className="block hover:text-[#C5A46E] transition">Careers (Coming Soon)</a>

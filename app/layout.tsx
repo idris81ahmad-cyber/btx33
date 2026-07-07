@@ -7,6 +7,8 @@ import Footer from "@/components/Footer";
 import { Providers } from "./providers";
 import { OrganizationJsonLd } from "@/components/seo/JsonLd";
 import UXProviders from "@/components/UXProviders";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 const geistSans = Geist({
@@ -68,6 +70,8 @@ export default function RootLayout({
           <main className="min-h-[calc(100vh-200px)] pb-16 md:pb-0">{children}</main>
           <UXProviders />
           <Footer />
+          <Analytics />
+          <SpeedInsights />
           <Toaster 
             position="top-center" 
             richColors 

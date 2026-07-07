@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ShoppingCart, Menu, X, Search, User } from "lucide-react";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { useCartStore } from "@/lib/cart-store";
 import { useUIStore } from "@/lib/ui-store";
 import { usePathname } from "next/navigation";
@@ -11,15 +12,23 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
   const cartCount = useCartStore((s) => s.getTotalItems());
   const setCartDrawerOpen = useUIStore((s) => s.setCartDrawerOpen);
+
+  const accountHref = session
+    ? session.user.role === "admin"
+      ? "/admin"
+      : "/account"
+    : "/login";
 
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop" },
+    { href: "/journal", label: "Journal" },
     { href: "/about", label: "Our Story" },
+    { href: "/wholesale", label: "Wholesale" },
     { href: "/contact", label: "Contact" },
-    { href: "/faq", label: "FAQ" },
   ];
 
   const isActive = (href: string) => {
@@ -30,7 +39,6 @@ export default function Navbar() {
   return (
     <nav className="navbar sticky top-0 z-50 border-b border-[#D4C9B8]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-full bg-[#6B2D3C] flex items-center justify-center">
             <span className="text-[#C5A46E] font-bold text-2xl tracking-[-1.5px]">B</span>
@@ -41,16 +49,15 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-10 text-sm font-medium">
+        <div className="hidden lg:flex items-center gap-8 text-sm font-medium">
           {navLinks.map((link) => (
-            <Link 
-              key={link.href} 
-              href={link.href} 
+            <Link
+              key={link.href}
+              href={link.href}
               className={`relative transition-colors duration-200 hover:text-[#6B2D3C] ${
-                isActive(link.href) 
-                  ? 'text-[#6B2D3C] after:absolute after:bottom-[-2px] after:left-0 after:h-[1.5px] after:w-full after:bg-[#6B2D3C]' 
-                  : 'after:absolute after:bottom-[-2px] after:left-0 after:h-[1px] after:w-0 after:bg-[#6B2D3C] hover:after:w-full after:transition-all'
+                isActive(link.href)
+                  ? "text-[#6B2D3C] after:absolute after:bottom-[-2px] after:left-0 after:h-[1.5px] after:w-full after:bg-[#6B2D3C]"
+                  : "after:absolute after:bottom-[-2px] after:left-0 after:h-[1px] after:w-0 after:bg-[#6B2D3C] hover:after:w-full after:transition-all"
               }`}
             >
               {link.label}
@@ -58,29 +65,30 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-4">
-          {/* Search - links to shop */}
-          <Link 
-            href="/shop" 
+        <div className="flex items-center gap-3">
+          <Link
+            href="/shop"
             className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-[#6B5F54] hover:text-[#2C2522] transition-colors rounded-full hover:bg-white/60"
           >
             <Search className="w-4 h-4" />
-            <span className="text-xs tracking-widest">SEARCH FABRICS</span>
+            <span className="text-xs tracking-widest">SEARCH</span>
           </Link>
 
-          {/* Account + Admin */}
-          <Link href="/admin" className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#6B5F54] hover:text-[#2C2522] rounded-full hover:bg-white/60 transition">
-            <User className="w-4 h-4" /> Admin
-          </Link>
-          <button 
-            className="hidden md:block p-2.5 rounded-full hover:bg-white/60 transition-colors"
-            onClick={() => alert("Account features coming soon. Demo mode active.")}
+          <Link
+            href="/calculator"
+            className="hidden md:block text-xs tracking-widest text-[#6B5F54] hover:text-[#6B2D3C] px-3 py-1.5"
           >
-            <User className="w-5 h-5 text-[#6B5F54]" />
-          </button>
+            FABRIC CALC
+          </Link>
 
-          {/* Cart drawer */}
+          <Link
+            href={accountHref}
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#6B5F54] hover:text-[#2C2522] rounded-full hover:bg-white/60 transition"
+          >
+            <User className="w-4 h-4" />
+            {session ? (session.user.role === "admin" ? "Admin" : "Account") : "Sign in"}
+          </Link>
+
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
@@ -102,10 +110,9 @@ export default function Navbar() {
             </AnimatePresence>
           </button>
 
-          {/* Mobile Menu Button */}
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="md:hidden p-2.5"
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="lg:hidden p-2.5"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -113,43 +120,40 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {isMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden border-t border-[#D4C9B8] bg-[#F8F4EC]"
+            className="lg:hidden border-t border-[#D4C9B8] bg-[#F8F4EC]"
           >
-            <div className="px-6 py-8 flex flex-col gap-6 text-lg font-medium">
+            <div className="px-6 py-8 flex flex-col gap-5 text-lg font-medium">
               {navLinks.map((link) => (
-                <Link 
-                  key={link.href} 
-                  href={link.href} 
+                <Link
+                  key={link.href}
+                  href={link.href}
                   onClick={() => setIsMenuOpen(false)}
                   className="hover:text-[#6B2D3C] transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
-              <Link 
-                href="/shop" 
-                onClick={() => setIsMenuOpen(false)}
-                className="flex items-center gap-2 text-[#6B5F54]"
-              >
-                <Search className="w-4 h-4" /> Search Fabrics
+              <Link href="/calculator" onClick={() => setIsMenuOpen(false)} className="text-[#6B5F54]">
+                Fabric Calculator
+              </Link>
+              <Link href="/faq" onClick={() => setIsMenuOpen(false)} className="text-[#6B5F54]">
+                FAQ
               </Link>
               <div className="pt-4 border-t border-[#D4C9B8]">
-                <button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    alert("Account features coming soon.");
-                  }}
+                <Link
+                  href={accountHref}
+                  onClick={() => setIsMenuOpen(false)}
                   className="flex items-center gap-2 text-[#6B5F54]"
                 >
-                  <User className="w-4 h-4" /> My Account
-                </button>
+                  <User className="w-4 h-4" />
+                  {session ? (session.user.role === "admin" ? "Admin dashboard" : "My account") : "Sign in"}
+                </Link>
               </div>
             </div>
           </motion.div>
