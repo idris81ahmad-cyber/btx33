@@ -80,7 +80,7 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: "btx3-cart",
+      name: "biyora-cart",
     }
   )
 );
