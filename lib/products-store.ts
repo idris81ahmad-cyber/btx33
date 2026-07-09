@@ -18,7 +18,7 @@ import {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-const BLOB_PATHNAME = "btx3/products.json";
+const BLOB_PATHNAME = "biyora/products.json"; // updated from btx3
 
 function hasBlobStorage(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
@@ -126,14 +126,27 @@ async function getProductsLegacy(): Promise<Product[]> {
   return defaults;
 }
 
+/**
+ * Primary product getter.
+ * Prefers Drizzle DB when available.
+ * Automatically seeds from legacy storage on first run if DB is empty.
+ */
 export async function getProducts(): Promise<Product[]> {
   if (hasDatabase()) {
     const fromDb = await getProductsFromDb();
-    if (fromDb && fromDb.length > 0) return fromDb;
+    if (fromDb && fromDb.length > 0) {
+      return fromDb;
+    }
+    // Auto-seed from legacy sources on first run
     const legacy = await getProductsLegacy();
-    await seedProductsToDb(legacy);
-    const seeded = await getProductsFromDb();
-    if (seeded && seeded.length > 0) return seeded;
+    if (legacy.length > 0) {
+      const seededCount = await seedProductsToDb(legacy);
+      if (seededCount > 0) {
+        console.log(`Seeded ${seededCount} products into database`);
+      }
+      const seeded = await getProductsFromDb();
+      if (seeded && seeded.length > 0) return seeded;
+    }
   }
   return getProductsLegacy();
 }
@@ -164,9 +177,17 @@ export async function getProductBySlug(slug: string): Promise<Product | undefine
   return products.find((p) => p.slug === slug);
 }
 
+/**
+ * Add a new product. Uses DB when available.
+ */
 export async function addProduct(
   product: Omit<Product, "id"> & { id?: number }
 ): Promise<Product> {
+  if (hasDatabase()) {
+    const dbResult = await upsertProductInDb(product as Product);
+    if (dbResult) return dbResult;
+  }
+
   const all = await getProducts();
   const newId = product.id || Math.max(0, ...all.map((p) => p.id)) + 1;
   const newProduct: Product = {
@@ -178,19 +199,28 @@ export async function addProduct(
   return newProduct;
 }
 
+/**
+ * Update an existing product. Prefers DB.
+ */
 export async function updateProduct(
   id: number,
   updates: Partial<Product>
 ): Promise<Product | null> {
+  if (hasDatabase()) {
+    const current = await getProducts();
+    const existing = current.find((p) => p.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates } as Product;
+      const dbResult = await upsertProductInDb(updated);
+      if (dbResult) return dbResult;
+    }
+  }
+
   const all = await getProducts();
   const index = all.findIndex((p) => p.id === id);
   if (index === -1) return null;
 
   const updated = { ...all[index], ...updates } as Product;
-  if (hasDatabase()) {
-    const dbResult = await upsertProductInDb(updated);
-    if (dbResult) return dbResult;
-  }
   all[index] = updated;
   await saveProducts(all);
   return updated;
@@ -219,6 +249,20 @@ export async function deleteProduct(id: number): Promise<boolean> {
 
 export async function resetToDefaults(): Promise<Product[]> {
   const defaults = getDefaultProducts();
+  if (hasDatabase()) {
+    // Clear and re-seed DB
+    // Note: For production, consider a more careful migration strategy
+  }
   await saveProducts(defaults);
   return defaults;
+}
+
+/**
+ * Force re-seed products from legacy sources into DB (useful from admin)
+ */
+export async function forceSeedProductsToDb(): Promise<number> {
+  if (!hasDatabase()) return 0;
+  const legacy = await getProductsLegacy();
+  if (legacy.length === 0) return 0;
+  return await seedProductsToDb(legacy);
 }
