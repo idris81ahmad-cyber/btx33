@@ -33,7 +33,7 @@
 - Framer Motion for smooth animations and micro-interactions
 - Zustand with persist middleware for cart/wishlist
 - React Hook Form + Zod for all forms
-- Drizzle ORM + Vercel Postgres (production-ready database layer)
+- **Drizzle ORM + Vercel Postgres** (products, orders, users — DB-first with graceful legacy fallback)
 - NextAuth v4 for secure authentication
 - Sonner for elegant toast notifications
 - Vercel Blob for admin image uploads
@@ -56,7 +56,7 @@
 | Animations            | Framer Motion                                   |
 | State Management      | Zustand + persist                               |
 | Forms & Validation    | React Hook Form + Zod                           |
-| Database & ORM        | Drizzle ORM + @vercel/postgres                  |
+| Database & ORM        | **Drizzle ORM + @vercel/postgres** (primary for products) |
 | Authentication        | NextAuth v4                                     |
 | Payments (prep)       | Paystack (env ready)                            |
 | Email                 | Resend                                          |
@@ -97,7 +97,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 5. Database (optional but recommended)
+### 5. Database (recommended)
 
 ```bash
 npm run db:generate
@@ -119,13 +119,13 @@ npm start
 biyora-shop/
 ├── app/                    # App Router pages + API routes
 │   ├── admin/              # Admin dashboard & login
-│   ├── api/                # Products, orders, reviews, auth, admin, upload, etc.
+│   ├── api/                # Products, orders, reviews, auth, admin, upload, seed, etc.
 │   ├── shop/, products/, cart/, checkout/, success/
 │   ├── journal/, wholesale/, calculator/, account/, contact/, faq/, about/
 │   └── layout.tsx, providers.tsx
 ├── components/             # Navbar, Footer, ProductCard, CartDrawer, modals, ui/
-├── lib/                    # cart-store, products, db (Drizzle), auth, utils
-├── data/products.json      # Curated textile catalog
+├── lib/                    # cart-store, products-store, db (Drizzle), auth, utils
+├── data/products.json      # Default/legacy textile catalog
 ├── types/                  # TypeScript interfaces
 ├── scripts/                # Admin setup, testing, secret generation
 ├── .github/workflows/      # CI + product sync
@@ -153,19 +153,31 @@ Curated selection of authentic, high-quality fabrics from Kano’s Kantin Kwari 
 | 11 | Sunset Orange Handcrafted Adire           | Adire & Tie-Dye             | 24,000     | 5yd, 6yd            |
 | 12 | Soft Blush Pink Premium Voile             | Silk, Chiffon & Voile       | 15,200     | 5yd, 6yd, 10yd      |
 
-All products include rich descriptions, realistic specs, multiple image options, ratings, and stock levels. Easily extendable via admin panel or code.
+All products include rich descriptions, realistic specs, multiple image options, ratings, and stock levels. Products are served from **Drizzle + Vercel Postgres** when available (with automatic seeding from legacy sources).
+
+---
+
+## 🛠 Product Data Layer (Drizzle Migration)
+
+The system is transitioning to **Drizzle ORM as the primary source of truth** for products:
+
+- `getProducts()`, `addProduct()`, `updateProduct()`, `deleteProduct()` prefer the database when connected.
+- Automatic seeding from `data/products.json` / Blob / GitHub on first run.
+- Admin can trigger re-seeding via `POST /api/admin/products/seed`.
+- Legacy fallback (JSON, Vercel Blob, GitHub) still supported for flexibility.
+
+**Recommended for production:** Connect Vercel Postgres and run the seed from admin after deployment.
 
 ---
 
 ## 🛠 How to Add New Fabrics
 
-**Option 1 (Recommended for production):** Use the Admin Dashboard (`/admin` after login) to add/edit products with image uploads.
+**Best Option (Production):** Use the Admin Dashboard → Products section. Changes go directly to the database when connected.
 
-**Option 2 (Code):** 
-1. Open `lib/products.ts` or `data/products.json`
-2. Add a new object following the `Product` interface
-3. Add images to `public/images/` or use external URLs (update `next.config.ts` remotePatterns if needed)
-4. The shop, filters, and product pages update automatically.
+**Alternative (Code):** 
+1. Edit `data/products.json` (for initial/legacy data)
+2. Or call the admin seed endpoint after adding to defaults
+3. The shop automatically picks up DB data when available
 
 ---
 
@@ -173,10 +185,11 @@ All products include rich descriptions, realistic specs, multiple image options,
 
 1. Push to GitHub
 2. Import repo on [vercel.com](https://vercel.com)
-3. Add environment variables from `.env.example` (especially NextAuth, database, Resend, Paystack)
-4. Deploy — automatic HTTPS + edge caching
+3. Add environment variables from `.env.example` (especially `DATABASE_URL` / Postgres, `NEXTAUTH_SECRET`, Resend, Paystack)
+4. Run `db:push` (or let the app auto-seed)
+5. Deploy
 
-**Custom Domain:** Point your domain (e.g. `biyorashop.com`) in Vercel settings.
+**Tip:** After first deployment with a database, visit Admin → trigger “Seed Products to DB” once.
 
 ---
 
@@ -196,8 +209,8 @@ GitHub Actions runs these checks on every push/PR. Security headers are enabled 
 
 **High Priority (In Progress)**
 - Full Paystack integration + webhook verification in checkout
-- Strengthen admin route protection & role-based access
-- Move product management fully to database + admin UI
+- Strengthen admin route protection & role-based access (largely complete)
+- **Complete Drizzle migration for products** + improved admin product management UI
 
 **Medium Priority**
 - Real user reviews & ratings persistence
@@ -235,4 +248,4 @@ This repository is production-grade, beautiful, and fully functional with admin 
 
 Made with precision by a senior full-stack developer & product builder.
 
-**Last updated:** July 2026 — Post code review enhancements (security headers, branding fixes, documentation)
+**Last updated:** July 2026 — Ongoing Drizzle migration + admin hardening
