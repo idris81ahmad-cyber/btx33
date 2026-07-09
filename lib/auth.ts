@@ -27,12 +27,18 @@ const legacyAdmins = [
   },
 ];
 
-const authSecret =
-  process.env.NEXTAUTH_SECRET ??
-  "BD4o4R2MTp5PbRAl3GPVmIdCu2Hoe1gXiLJ4bXtqOQU=";
+const getAuthSecret = () => {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "NEXTAUTH_SECRET is not set. Please generate a strong secret (use: openssl rand -base64 32) and add it to your environment variables."
+    );
+  }
+  return secret;
+};
 
 export const authOptions: NextAuthOptions = {
-  secret: authSecret,
+  secret: getAuthSecret(),
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -84,7 +90,7 @@ export const authOptions: NextAuthOptions = {
         return null;
       },
     }),
-  ],
+  },
   pages: {
     signIn: "/login",
   },
@@ -115,12 +121,23 @@ export { getServerSession };
 
 export async function requireAdmin() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== "admin") return null;
+  if (!session || session.user?.role !== "admin") {
+    return null;
+  }
   return session;
 }
 
 export async function requireCustomer() {
   const session = await getServerSession(authOptions);
   if (!session) return null;
+  return session;
+}
+
+// Strict version that throws for server components / route handlers
+export async function requireAdminOrThrow() {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user?.role !== "admin") {
+    throw new Error("Unauthorized: Admin access required");
+  }
   return session;
 }

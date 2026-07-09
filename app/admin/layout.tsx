@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth";
 import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
@@ -7,6 +9,16 @@ export const metadata = createPageMetadata({
   noIndex: true,
 });
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return children;
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await requireAdmin();
+
+  if (!session) {
+    redirect("/admin/login");
+  }
+
+  return <>{children}</>;
 }
