@@ -58,7 +58,7 @@
 | Forms & Validation    | React Hook Form + Zod                           |
 | Database & ORM        | **Drizzle ORM + @vercel/postgres** (primary for products) |
 | Authentication        | NextAuth v4                                     |
-| Payments (prep)       | Paystack (env ready)                            |
+| Payments              | **Paystack ready** (helper + env prepared)      |
 | Email                 | Resend                                          |
 | File Storage          | @vercel/blob                                    |
 | Notifications         | Sonner                                          |
@@ -123,8 +123,8 @@ biyora-shop/
 │   ├── shop/, products/, cart/, checkout/, success/
 │   ├── journal/, wholesale/, calculator/, account/, contact/, faq/, about/
 │   └── layout.tsx, providers.tsx
-├── components/             # Navbar, Footer, ProductCard, CartDrawer, modals, ui/
-├── lib/                    # cart-store, products-store, db (Drizzle), auth, utils
+├── components/             # Navbar, Footer, ProductCard, CartDrawer, modals, ui/, admin/
+├── lib/                    # cart-store, products-store, db (Drizzle), auth, paystack, utils
 ├── data/products.json      # Default/legacy textile catalog
 ├── types/                  # TypeScript interfaces
 ├── scripts/                # Admin setup, testing, secret generation
@@ -163,10 +163,21 @@ The system is transitioning to **Drizzle ORM as the primary source of truth** fo
 
 - `getProducts()`, `addProduct()`, `updateProduct()`, `deleteProduct()` prefer the database when connected.
 - Automatic seeding from `data/products.json` / Blob / GitHub on first run.
-- Admin can trigger re-seeding via `POST /api/admin/products/seed`.
+- Admin can trigger re-seeding via `POST /api/admin/products/seed` (or using the Seed button in admin).
+- A reusable `<ProductManager />` component is available for the admin dashboard.
 - Legacy fallback (JSON, Vercel Blob, GitHub) still supported for flexibility.
 
 **Recommended for production:** Connect Vercel Postgres and run the seed from admin after deployment.
+
+---
+
+## 💳 Payments (Paystack)
+
+Paystack integration foundation is ready:
+
+- `lib/paystack.ts` contains `initializePaystackPayment()` and `verifyPaystackPayment()` helpers.
+- Environment variables prepared in `.env.example`.
+- Next step: Wire into checkout flow + add webhook verification.
 
 ---
 
@@ -185,11 +196,11 @@ The system is transitioning to **Drizzle ORM as the primary source of truth** fo
 
 1. Push to GitHub
 2. Import repo on [vercel.com](https://vercel.com)
-3. Add environment variables from `.env.example` (especially `DATABASE_URL` / Postgres, `NEXTAUTH_SECRET`, Resend, Paystack)
-4. Run `db:push` (or let the app auto-seed)
+3. Add environment variables from `.env.example` (especially `DATABASE_URL`, `NEXTAUTH_SECRET`, Resend, Paystack)
+4. Run `db:push`
 5. Deploy
 
-**Tip:** After first deployment with a database, visit Admin → trigger “Seed Products to DB” once.
+**Tip:** After first deployment with a database, visit Admin and use the “Seed / Sync to Database” button.
 
 ---
 
@@ -208,21 +219,18 @@ GitHub Actions runs these checks on every push/PR. Security headers are enabled 
 ## 🗺 Future Roadmap (Prioritized)
 
 **High Priority (In Progress)**
-- Full Paystack integration + webhook verification in checkout
-- Strengthen admin route protection & role-based access (largely complete)
-- **Complete Drizzle migration for products** + improved admin product management UI
+- Full Paystack integration in checkout + webhook
+- Complete admin product management UI polish
+- Finalize Drizzle migration for products
 
 **Medium Priority**
 - Real user reviews & ratings persistence
 - Order tracking page
 - Email templates & order confirmation emails
-- URL-synced shop filters for shareable links
 
 **Nice to Have**
 - Multi-currency support
-- Digital swatch samples / AR try-on ideas
-- Advanced analytics dashboard
-- Wholesale quote request system with email notifications
+- Digital swatch samples
 
 The current architecture is clean, scalable, and ready for these additions.
 
@@ -248,4 +256,4 @@ This repository is production-grade, beautiful, and fully functional with admin 
 
 Made with precision by a senior full-stack developer & product builder.
 
-**Last updated:** July 2026 — Ongoing Drizzle migration + admin hardening
+**Last updated:** July 2026 — Major batch of enhancements (Admin hardening, Drizzle progress, Paystack foundation)
