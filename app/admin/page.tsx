@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { Product } from "@/types/product";
 import { categories } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
+import ProductManager from "@/components/admin/ProductManager";
 
 interface ProductForm {
   name: string;
@@ -448,7 +449,7 @@ export default function AdminDashboard() {
             {activeTab === "products"
               ? "Full CRUD • Image management • Live updates to shop"
               : "View orders • Update status • Track fulfilment"}
-          </p>
+            </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -553,69 +554,37 @@ export default function AdminDashboard() {
       )}
 
       {activeTab === "products" && (
-      <>
-      <div className="bg-white border border-[#D4C9B8] rounded-3xl overflow-hidden">
-        <div className="px-6 py-4 border-b flex justify-between items-center">
-          <h2 className="font-semibold text-xl tracking-tight">All Fabrics ({products.length})</h2>
-        </div>
-
-        {loading ? (
-          <div className="p-12 text-center text-[#6B5F54]">Loading products...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#F8F4EC] text-[#6B5F54]">
-                <tr>
-                  <th className="text-left px-6 py-3">Product</th>
-                  <th className="text-left px-6 py-3">Category</th>
-                  <th className="text-right px-6 py-3">Price</th>
-                  <th className="text-right px-6 py-3">Stock</th>
-                  <th className="text-center px-6 py-3 w-56">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#EDE6D9]">
-                {products.length === 0 && (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-[#6B5F54]">No products yet. Add your first fabric.</td></tr>
-                )}
-                {products.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#F8F4EC]/60">
-                    <td className="px-6 py-4">
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-xs text-[#6B5F54] truncate max-w-[280px]">{p.slug}</div>
-                    </td>
-                    <td className="px-6 py-4 text-[#6B5F54]">{p.category}</td>
-                    <td className="px-6 py-4 text-right font-medium">
-                      ₦{p.price.toLocaleString()}
-                      {p.salePrice && <span className="ml-2 text-xs line-through text-[#6B5F54]">₦{p.salePrice}</span>}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button type="button" onClick={() => quickStockUpdate(p, -1)} className="text-xs px-2 py-0.5 border rounded-lg">−</button>
-                        <span className={p.inStock > 15 ? "text-emerald-600 min-w-[2ch]" : "text-amber-600 min-w-[2ch]"}>{p.inStock}</span>
-                        <button type="button" onClick={() => quickStockUpdate(p, 1)} className="text-xs px-2 py-0.5 border rounded-lg">+</button>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => openEdit(p)} className="text-xs px-4 py-1.5 rounded-xl border border-[#D4C9B8] hover:bg-white">Edit</button>
-                        <button onClick={() => handleDelete(p)} className="text-xs px-4 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
+              <div className="text-sm text-[#6B5F54]">Total Fabrics</div>
+              <div className="text-4xl font-semibold mt-1 tracking-tight">{totalProducts}</div>
+            </div>
+            <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
+              <div className="text-sm text-[#6B5F54]">Units in Stock</div>
+              <div className="text-4xl font-semibold mt-1 tracking-tight">{totalStock}</div>
+            </div>
+            <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
+              <div className="text-sm text-[#6B5F54]">Avg Rating</div>
+              <div className="text-4xl font-semibold mt-1 tracking-tight">{avgRating}</div>
+            </div>
+            <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
+              <div className="text-sm text-[#6B5F54]">Categories</div>
+              <div className="text-4xl font-semibold mt-1 tracking-tight">8</div>
+            </div>
           </div>
-        )}
-      </div>
 
-      <div className="mt-4 text-xs text-[#6B5F54]">
-        Changes sync to Vercel Blob / GitHub storage and reflect on the shop immediately.
-      </div>
-      </>
+          {/* Improved Product Manager */}
+          <ProductManager initialProducts={products} />
+
+          <div className="mt-4 text-xs text-[#6B5F54]">
+            Changes sync to Vercel Blob / GitHub storage and reflect on the shop immediately. Use the rich Add/Edit modal below for full product details.
+          </div>
+        </>
       )}
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Modal (kept for rich product creation/editing) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={closeModal}>
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-auto" onClick={e => e.stopPropagation()}>
@@ -654,7 +623,7 @@ export default function AdminDashboard() {
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-1.5">Short Description *</label>
                 <input value={form.shortDescription} onChange={e => setForm({ ...form, shortDescription: e.target.value })} className="input-premium w-full rounded-2xl px-4 py-3" required />
-              </div>
+                </div>
 
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-1.5">Full Description</label>
