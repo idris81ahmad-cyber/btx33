@@ -58,6 +58,17 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   const [showBulkCategoryModal, setShowBulkCategoryModal] = useState(false);
   const [bulkNewCategory, setBulkNewCategory] = useState('');
 
+  // Bulk Price Adjustment Modal
+  const [showBulkPriceModal, setShowBulkPriceModal] = useState(false);
+  const [priceAdjustmentType, setPriceAdjustmentType] = useState<'percentage' | 'fixed'>('percentage');
+  const [priceAdjustmentValue, setPriceAdjustmentValue] = useState(10);
+  const [priceAdjustmentDirection, setPriceAdjustmentDirection] = useState<'increase' | 'decrease'>('increase');
+
+  // Bulk Sale Management Modal
+  const [showBulkSaleModal, setShowBulkSaleModal] = useState(false);
+  const [bulkSaleAction, setBulkSaleAction] = useState<'set' | 'remove'>('set');
+  const [bulkSalePrice, setBulkSalePrice] = useState(0);
+
   // Sync with parent when initialProducts change
   useEffect(() => {
     setProducts(initialProducts);
@@ -174,6 +185,8 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   const clearSelection = () => {
     setSelectedIds([]);
     setShowBulkCategoryModal(false);
+    setShowBulkPriceModal(false);
+    setShowBulkSaleModal(false);
   };
 
   // Bulk Stock Update
@@ -219,7 +232,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   // Bulk Category Change
   const openBulkCategoryModal = () => {
     if (selectedIds.length === 0) return;
-    // Pre-select first product's category as default
     const firstSelected = products.find(p => selectedIds.includes(p.id));
     setBulkNewCategory(firstSelected?.category || uniqueCategories[1] || '');
     setShowBulkCategoryModal(true);
@@ -232,13 +244,11 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     setShowBulkCategoryModal(false);
 
     try {
-      // Update locally for instant feedback
       const updatedProducts = products.map(p =>
         selectedIds.includes(p.id) ? { ...p, category: bulkNewCategory } : p
       );
       setProducts(updatedProducts);
 
-      // API updates
       const updatePromises = selectedIds.map(id =>
         fetch(`/api/admin/products/${id}`, {
           method: 'PATCH',
@@ -253,6 +263,121 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       clearSelection();
     } catch (error) {
       toast.error('Some category updates may have failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk Price Adjustment
+  const openBulkPriceModal = () => {
+    if (selectedIds.length === 0) return;
+    setPriceAdjustmentType('percentage');
+    setPriceAdjustmentValue(10);
+    setPriceAdjustmentDirection('increase');
+    setShowBulkPriceModal(true);
+  };
+
+  const handleBulkPriceAdjustment = async () => {
+    if (selectedIds.length === 0) return;
+
+    setLoading(true);
+    setShowBulkPriceModal(false);
+
+    try {
+      const updatedProducts = products.map(p => {
+        if (!selectedIds.includes(p.id)) return p;
+
+        const currentPrice = p.salePrice ?? p.price;
+        let newPrice: number;
+
+        if (priceAdjustmentType === 'percentage') {
+          const multiplier = priceAdjustmentDirection === 'increase' ? (1 + priceAdjustmentValue / 100) : (1 - priceAdjustmentValue / 100);
+          newPrice = Math.round(currentPrice * multiplier);
+        } else {
+          newPrice = priceAdjustmentDirection === 'increase' 
+            ? currentPrice + priceAdjustmentValue 
+            : Math.max(0, currentPrice - priceAdjustmentValue);
+        }
+
+        // Update regular price (and keep salePrice if it exists)
+        return { ...p, price: Math.max(1000, newPrice) }; // minimum reasonable price
+      });
+
+      setProducts(updatedProducts);
+
+      // API updates
+      const updatePromises = selectedIds.map(id => {
+        const product = updatedProducts.find(p => p.id === id)!;
+        return fetch(`/api/admin/products/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ price: product.price }),
+        });
+      });
+
+      await Promise.allSettled(updatePromises);
+
+      const actionText = `${priceAdjustmentDirection === 'increase' ? '+' : '-'}${priceAdjustmentValue}${priceAdjustmentType === 'percentage' ? '%' : ' ₦'}`;
+      toast.success(`Prices adjusted by ${actionText} for ${selectedIds.length} products`);
+      clearSelection();
+    } catch (error) {
+      toast.error('Some price updates may have failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk Sale Management
+  const openBulkSaleModal = () => {
+    if (selectedIds.length === 0) return;
+    setBulkSaleAction('set');
+    // Default to 20% off the first selected product's price
+    const first = products.find(p => selectedIds.includes(p.id));
+    const basePrice = first ? (first.salePrice ?? first.price) : 15000;
+    setBulkSalePrice(Math.round(basePrice * 0.8));
+    setShowBulkSaleModal(true);
+  };
+
+  const handleBulkSaleUpdate = async () => {
+    if (selectedIds.length === 0) return;
+
+    setLoading(true);
+    setShowBulkSaleModal(false);
+
+    try {
+      const updatedProducts = products.map(p => {
+        if (!selectedIds.includes(p.id)) return p;
+
+        if (bulkSaleAction === 'remove') {
+          return { ...p, salePrice: undefined };
+        } else {
+          // Set sale price (ensure it's lower than regular price)
+          const regularPrice = p.price;
+          const newSale = Math.min(bulkSalePrice, Math.floor(regularPrice * 0.95));
+          return { ...p, salePrice: Math.max(1000, newSale) };
+        }
+      });
+
+      setProducts(updatedProducts);
+
+      const updatePromises = selectedIds.map(id => {
+        const product = updatedProducts.find(p => p.id === id)!;
+        return fetch(`/api/admin/products/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ salePrice: product.salePrice }),
+        });
+      });
+
+      await Promise.allSettled(updatePromises);
+
+      const message = bulkSaleAction === 'remove' 
+        ? `Removed from sale for ${selectedIds.length} products`
+        : `Sale price set for ${selectedIds.length} products`;
+      toast.success(message);
+      clearSelection();
+    } catch (error) {
+      toast.error('Some sale updates may have failed');
     } finally {
       setLoading(false);
     }
@@ -533,11 +658,25 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               Update Stock
             </button>
             <button
+              onClick={openBulkPriceModal}
+              disabled={loading}
+              className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
+            >
+              Adjust Price
+            </button>
+            <button
               onClick={openBulkCategoryModal}
               disabled={loading}
               className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
             >
               Change Category
+            </button>
+            <button
+              onClick={openBulkSaleModal}
+              disabled={loading}
+              className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
+            >
+              Manage Sale
             </button>
             <button
               onClick={handleBulkDelete}
@@ -671,7 +810,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       </div>
 
       <div className="text-[10px] md:text-xs text-[#6B5F54] px-1">
-        Tip: Scroll horizontally on mobile. Tap column headers to sort. Use bulk actions for efficiency.
+        Tip: Scroll horizontally on mobile. Use bulk actions for fast inventory management.
       </div>
 
       {/* Bulk Category Change Modal */}
@@ -701,15 +840,188 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowBulkCategoryModal(false)}
-                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]"
-              >
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">
                 Cancel
               </button>
               <button
                 onClick={handleBulkCategoryChange}
                 disabled={loading || !bulkNewCategory}
-                className="flex-1 py-3 btn-primary disabled:opacity-60"
-              >
+                className="flex-1 py-3 btn-primary disabled:opacity-60">
+                {loading ? 'Updating...' : 'Apply to Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Price Adjustment Modal */}
+      {showBulkPriceModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-2">Adjust Prices</h3>
+            <p className="text-sm text-[#6B5F54] mb-4">
+              Adjust price for <strong>{selectedIds.length}</strong> selected product{selectedIds.length > 1 ? 's' : ''}.
+            </p>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Adjustment Type</label>
+                  <select
+                    value={priceAdjustmentType}
+                    onChange={(e) => setPriceAdjustmentType(e.target.value as 'percentage' | 'fixed')}
+                    className="input-premium w-full"
+                  >
+                    <option value="percentage">Percentage (%)</option>
+                    <option value="fixed">Fixed Amount (₦)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Direction</label>
+                  <select
+                    value={priceAdjustmentDirection}
+                    onChange={(e) => setPriceAdjustmentDirection(e.target.value as 'increase' | 'decrease')}
+                    className="input-premium w-full"
+                  >
+                    <option value="increase">Increase</option>
+                    <option value="decrease">Decrease</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-[#6B5F54] block mb-1.5">
+                  {priceAdjustmentType === 'percentage' ? 'Percentage Value' : 'Amount (₦)'}
+                </label>
+                <input
+                  type="number"
+                  value={priceAdjustmentValue}
+                  onChange={(e) => setPriceAdjustmentValue(parseInt(e.target.value) || 0)}
+                  className="input-premium w-full"
+                  min="0"
+                />
+              </div>
+
+              <div className="text-xs text-[#6B5F54] bg-[#F8F4EC] p-3 rounded-xl">
+                Example: {priceAdjustmentDirection === 'increase' ? '+' : '-'}{priceAdjustmentValue}
+                {priceAdjustmentType === 'percentage' ? '%' : ' ₦'} on current price.
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowBulkPriceModal(false)}
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkPriceAdjustment}
+                disabled={loading || priceAdjustmentValue <= 0}
+                className="flex-1 py-3 btn-primary disabled:opacity-60">
+                {loading ? 'Updating...' : 'Apply Adjustment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Sale Management Modal */}
+      {showBulkSaleModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-2">Manage Sale Pricing</h3>
+            <p className="text-sm text-[#6B5F54] mb-4">
+              Update sale status for <strong>{selectedIds.length}</strong> selected product{selectedIds.length > 1 ? 's' : ''}.
+            </p>
+
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBulkSaleAction('set')}
+                  className={`flex-1 py-2 rounded-xl text-sm border transition ${bulkSaleAction === 'set' ? 'bg-[#6B2D3C] text-white border-[#6B2D3C]' : 'border-[#D4C9B8] hover:bg-[#F8F4EC]'}`}
+                >
+                  Set Sale Price
+                </button>
+                <button
+                  onClick={() => setBulkSaleAction('remove')}
+                  className={`flex-1 py-2 rounded-xl text-sm border transition ${bulkSaleAction === 'remove' ? 'bg-[#6B2D3C] text-white border-[#6B2D3C]' : 'border-[#D4C9B8] hover:bg-[#F8F4EC]'}`}
+                >
+                  Remove from Sale
+                </button>
+              </div>
+
+              {bulkSaleAction === 'set' && (
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">New Sale Price (₦)</label>
+                  <input
+                    type="number"
+                    value={bulkSalePrice}
+                    onChange={(e) => setBulkSalePrice(parseInt(e.target.value) || 0)}
+                    className="input-premium w-full"
+                    min="1000"
+                  />
+                  <p className="text-xs text-[#6B5F54] mt-1">Will be set lower than regular price automatically.</p>
+                </div>
+              )}
+
+              {bulkSaleAction === 'remove' && (
+                <div className="text-sm text-[#6B5F54] bg-[#F8F4EC] p-4 rounded-xl">
+                  This will remove the sale price from all selected products (they will show regular price only).
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowBulkSaleModal(false)}
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkSaleUpdate}
+                disabled={loading}
+                className="flex-1 py-3 btn-primary disabled:opacity-60">
+                {loading ? 'Updating...' : bulkSaleAction === 'set' ? 'Set Sale Price' : 'Remove from Sale'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Category Change Modal */}
+      {showBulkCategoryModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-2">Change Category</h3>
+            <p className="text-sm text-[#6B5F54] mb-4">
+              Update category for <strong>{selectedIds.length}</strong> selected product{selectedIds.length > 1 ? 's' : ''}.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-[#6B5F54] block mb-1.5">New Category</label>
+                <select
+                  value={bulkNewCategory}
+                  onChange={(e) => setBulkNewCategory(e.target.value)}
+                  className="input-premium w-full"
+                >
+                  {uniqueCategories.filter(c => c !== 'All Categories').map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowBulkCategoryModal(false)}
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkCategoryChange}
+                disabled={loading || !bulkNewCategory}
+                className="flex-1 py-3 btn-primary disabled:opacity-60">
                 {loading ? 'Updating...' : 'Apply to Selected'}
               </button>
             </div>
