@@ -29,12 +29,17 @@ const legacyAdmins = [
 
 const getAuthSecret = () => {
   const secret = process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    throw new Error(
-      "NEXTAUTH_SECRET is not set. Please generate a strong secret (use: openssl rand -base64 32) and add it to your environment variables."
-    );
+  if (secret) return secret;
+
+  // Next.js evaluates auth modules during "Collecting page data" at build time.
+  // Vercel may not inject secrets until runtime, so allow the build to finish.
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return "build-time-placeholder-secret";
   }
-  return secret;
+
+  throw new Error(
+    "NEXTAUTH_SECRET is not set. Please generate a strong secret (use: openssl rand -base64 32) and add it to your environment variables."
+  );
 };
 
 export const authOptions: NextAuthOptions = {
