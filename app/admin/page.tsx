@@ -575,11 +575,11 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Improved Product Manager */}
-          <ProductManager initialProducts={products} />
+          {/* Improved Product Manager with Create button wired to rich modal */}
+          <ProductManager initialProducts={products} onCreateNew={openAdd} />
 
           <div className="mt-4 text-xs text-[#6B5F54]">
-            Changes sync to Vercel Blob / GitHub storage and reflect on the shop immediately. Use the rich Add/Edit modal below for full product details.
+            Quick actions in the manager use simple forms. Use the rich "Add Fabric" modal for full details (images, specs, lengths).
           </div>
         </>
       )}
