@@ -3,7 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
-  "regions": ["cdg1"],
+
   "env": {
     "NEXTAUTH_URL": "https://biyora-shop.vercel.app",
     "NEXT_PUBLIC_SITE_URL": "https://biyora-shop.vercel.app"

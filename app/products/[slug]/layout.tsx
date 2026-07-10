@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getProducts } from "@/lib/products-store";
+
+export const dynamic = "force-dynamic";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 

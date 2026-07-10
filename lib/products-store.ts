@@ -136,29 +136,55 @@ async function getProductsLegacy(): Promise<Product[]> {
   return defaults;
 }
 
+function isProductionBuild(): boolean {
+  return process.env.NEXT_PHASE === "phase-production-build";
+}
+
+async function withTimeout<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error("product fetch timeout")), FETCH_TIMEOUT_MS),
+      ),
+    ]);
+  } catch {
+    return fallback;
+  }
+}
+
 /**
  * Primary product getter.
- * Prefers Drizzle DB when available.
- * Automatically seeds from legacy storage on first run if DB is empty.
+ * Prefers Drizzle DB when available at runtime.
+ * During production builds, uses fast legacy/default fallback to avoid Vercel timeouts.
  */
 export async function getProducts(): Promise<Product[]> {
+  if (isProductionBuild()) {
+    const legacy = await withTimeout(getProductsLegacy(), getDefaultProducts());
+    return legacy.length > 0 ? legacy : getDefaultProducts();
+  }
+
   if (hasDatabase()) {
-    const fromDb = await getProductsFromDb();
+    const fromDb = await withTimeout(getProductsFromDb(), null);
     if (fromDb && fromDb.length > 0) {
       return fromDb;
     }
-    // Auto-seed from legacy sources on first run
-    const legacy = await getProductsLegacy();
+    const legacy = await withTimeout(getProductsLegacy(), getDefaultProducts());
     if (legacy.length > 0) {
-      const seededCount = await seedProductsToDb(legacy);
-      if (seededCount > 0) {
-        console.log(`Seeded ${seededCount} products into database`);
+      try {
+        const seededCount = await seedProductsToDb(legacy);
+        if (seededCount > 0) {
+          console.log(`Seeded ${seededCount} products into database`);
+        }
+        const seeded = await getProductsFromDb();
+        if (seeded && seeded.length > 0) return seeded;
+      } catch (e) {
+        console.error("DB seed during getProducts failed:", e);
       }
-      const seeded = await getProductsFromDb();
-      if (seeded && seeded.length > 0) return seeded;
+      return legacy;
     }
   }
-  return getProductsLegacy();
+  return withTimeout(getProductsLegacy(), getDefaultProducts());
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
