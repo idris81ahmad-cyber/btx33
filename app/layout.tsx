@@ -53,14 +53,24 @@ export const metadata: Metadata = {
     images: [absoluteUrl(siteConfig.ogImage)],
   },
   robots: { index: true, follow: true },
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: [
+      { url: '/biyora-logo.png', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    apple: '/biyora-logo.png',
+    other: [
+      { rel: 'android-chrome-192x192', url: '/biyora-logo.png' },
+      { rel: 'android-chrome-512x512', url: '/biyora-logo.png' },
+    ],
+  },
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
-}>) {
+  children: React.ReactNode}>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased bg-[#F8F4EC] text-[#2C2522]">
