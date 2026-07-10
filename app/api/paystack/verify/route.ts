@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    // Verify with Paystack
     const verification = await verifyPaystackPayment(reference);
 
     if (!verification.status || verification.data.status !== 'success') {
@@ -29,7 +28,6 @@ export async function POST(request: NextRequest) {
 
     const paymentData = verification.data;
 
-    // Check if order already exists
     const existingOrder = await db.query.orders.findFirst({
       where: eq(orders.orderNumber, reference),
     });
@@ -42,7 +40,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create order in database
     const metadata = paymentData.metadata || {};
     const cartItems = metadata.cartItems || [];
 
