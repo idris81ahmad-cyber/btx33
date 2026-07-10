@@ -54,6 +54,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
+  // Bulk Category Change Modal
+  const [showBulkCategoryModal, setShowBulkCategoryModal] = useState(false);
+  const [bulkNewCategory, setBulkNewCategory] = useState('');
+
   // Sync with parent when initialProducts change
   useEffect(() => {
     setProducts(initialProducts);
@@ -167,7 +171,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     }
   };
 
-  const clearSelection = () => setSelectedIds([]);
+  const clearSelection = () => {
+    setSelectedIds([]);
+    setShowBulkCategoryModal(false);
+  };
 
   // Bulk Stock Update
   const handleBulkStockUpdate = async () => {
@@ -204,6 +211,48 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       clearSelection();
     } catch (error) {
       toast.error('Some updates may have failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk Category Change
+  const openBulkCategoryModal = () => {
+    if (selectedIds.length === 0) return;
+    // Pre-select first product's category as default
+    const firstSelected = products.find(p => selectedIds.includes(p.id));
+    setBulkNewCategory(firstSelected?.category || uniqueCategories[1] || '');
+    setShowBulkCategoryModal(true);
+  };
+
+  const handleBulkCategoryChange = async () => {
+    if (selectedIds.length === 0 || !bulkNewCategory) return;
+
+    setLoading(true);
+    setShowBulkCategoryModal(false);
+
+    try {
+      // Update locally for instant feedback
+      const updatedProducts = products.map(p =>
+        selectedIds.includes(p.id) ? { ...p, category: bulkNewCategory } : p
+      );
+      setProducts(updatedProducts);
+
+      // API updates
+      const updatePromises = selectedIds.map(id =>
+        fetch(`/api/admin/products/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ category: bulkNewCategory }),
+        })
+      );
+
+      await Promise.allSettled(updatePromises);
+
+      toast.success(`Category changed to "${bulkNewCategory}" for ${selectedIds.length} products`);
+      clearSelection();
+    } catch (error) {
+      toast.error('Some category updates may have failed');
     } finally {
       setLoading(false);
     }
@@ -432,7 +481,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
           <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
         </div>
 
-        {/* Filter Bar - Mobile Responsive */}
+        {/* Filter Bar */}
         <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full md:w-auto">
           <input
             type="text"
@@ -469,11 +518,11 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       </div>
 
-      {/* Bulk Action Bar - Mobile Friendly */}
+      {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-[#F8F4EC] border border-[#D4C9B8] rounded-2xl px-4 py-3">
           <div className="font-medium text-sm">
-            {selectedIds.length} selected
+            {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
           </div>
           <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <button
@@ -482,6 +531,13 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
             >
               Update Stock
+            </button>
+            <button
+              onClick={openBulkCategoryModal}
+              disabled={loading}
+              className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
+            >
+              Change Category
             </button>
             <button
               onClick={handleBulkDelete}
@@ -502,7 +558,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         <div className="text-xs md:text-sm text-[#6B5F54]">Showing {displayedProducts.length} of {products.length} products</div>
       )}
 
-      {/* Products Table - Mobile Responsive */}
+      {/* Products Table */}
       <div className="bg-white rounded-2xl border border-[#D4C9B8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
@@ -615,8 +671,51 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       </div>
 
       <div className="text-[10px] md:text-xs text-[#6B5F54] px-1">
-        Tip: Scroll horizontally on mobile. Tap column headers to sort.
+        Tip: Scroll horizontally on mobile. Tap column headers to sort. Use bulk actions for efficiency.
       </div>
+
+      {/* Bulk Category Change Modal */}
+      {showBulkCategoryModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-2">Change Category</h3>
+            <p className="text-sm text-[#6B5F54] mb-4">
+              Update category for <strong>{selectedIds.length}</strong> selected product{selectedIds.length > 1 ? 's' : ''}.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-[#6B5F54] block mb-1.5">New Category</label>
+                <select
+                  value={bulkNewCategory}
+                  onChange={(e) => setBulkNewCategory(e.target.value)}
+                  className="input-premium w-full"
+                >
+                  {uniqueCategories.filter(c => c !== 'All Categories').map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowBulkCategoryModal(false)}
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkCategoryChange}
+                disabled={loading || !bulkNewCategory}
+                className="flex-1 py-3 btn-primary disabled:opacity-60"
+              >
+                {loading ? 'Updating...' : 'Apply to Selected'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editingProduct && editForm && (
