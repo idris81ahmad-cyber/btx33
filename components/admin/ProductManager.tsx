@@ -1,4 +1,4 @@
-"use client";
+use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/types/product';
@@ -222,7 +222,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success(`Stock updated to ${newStock} for ${selectedIds.length} products`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Some updates may have failed');
     } finally {
       setLoading(false);
@@ -261,7 +261,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success(`Category changed to "${bulkNewCategory}" for ${selectedIds.length} products`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Some category updates may have failed');
     } finally {
       setLoading(false);
@@ -299,13 +299,11 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
             : Math.max(0, currentPrice - priceAdjustmentValue);
         }
 
-        // Update regular price (and keep salePrice if it exists)
-        return { ...p, price: Math.max(1000, newPrice) }; // minimum reasonable price
+        return { ...p, price: Math.max(1000, newPrice) };
       });
 
       setProducts(updatedProducts);
 
-      // API updates
       const updatePromises = selectedIds.map(id => {
         const product = updatedProducts.find(p => p.id === id)!;
         return fetch(`/api/admin/products/${id}`, {
@@ -320,7 +318,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       const actionText = `${priceAdjustmentDirection === 'increase' ? '+' : '-'}${priceAdjustmentValue}${priceAdjustmentType === 'percentage' ? '%' : ' ₦'}`;
       toast.success(`Prices adjusted by ${actionText} for ${selectedIds.length} products`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Some price updates may have failed');
     } finally {
       setLoading(false);
@@ -331,7 +329,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   const openBulkSaleModal = () => {
     if (selectedIds.length === 0) return;
     setBulkSaleAction('set');
-    // Default to 20% off the first selected product's price
     const first = products.find(p => selectedIds.includes(p.id));
     const basePrice = first ? (first.salePrice ?? first.price) : 15000;
     setBulkSalePrice(Math.round(basePrice * 0.8));
@@ -351,7 +348,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         if (bulkSaleAction === 'remove') {
           return { ...p, salePrice: undefined };
         } else {
-          // Set sale price (ensure it's lower than regular price)
           const regularPrice = p.price;
           const newSale = Math.min(bulkSalePrice, Math.floor(regularPrice * 0.95));
           return { ...p, salePrice: Math.max(1000, newSale) };
@@ -376,7 +372,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         : `Sale price set for ${selectedIds.length} products`;
       toast.success(message);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Some sale updates may have failed');
     } finally {
       setLoading(false);
@@ -405,7 +401,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success(`Deleted ${selectedIds.length} products`);
       clearSelection();
-    } catch (error) {
+    } catch {
       toast.error('Some deletions may have failed');
     } finally {
       setLoading(false);
@@ -464,7 +460,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success('Product updated successfully');
       closeEdit();
-    } catch (error) {
+    } catch {
       toast.error('Failed to update product');
     } finally {
       setLoading(false);
@@ -484,7 +480,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       setProducts(products.filter(p => p.id !== id));
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       toast.success('Product deleted');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete product');
     } finally {
       setDeletingId(null);
@@ -506,7 +502,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         p.id === id ? { ...p, inStock: newStock } : p
       ));
       toast.success('Stock updated');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update stock');
     }
   };
@@ -573,8 +569,8 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       setProducts([...products, newProduct]);
       toast.success('New product created successfully');
       closeCreate();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create product');
+    } catch {
+      toast.error('Failed to create product');
     } finally {
       setLoading(false);
     }
@@ -606,7 +602,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
           <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
         </div>
 
-        {/* Filter Bar */}
         <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full md:w-auto">
           <input
             type="text"
@@ -643,7 +638,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       </div>
 
-      {/* Bulk Action Bar */}
       {selectedIds.length > 0 && (
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-[#F8F4EC] border border-[#D4C9B8] rounded-2xl px-4 py-3">
           <div className="font-medium text-sm">
@@ -692,12 +686,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Results count */}
       {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
         <div className="text-xs md:text-sm text-[#6B5F54]">Showing {displayedProducts.length} of {products.length} products</div>
       )}
 
-      {/* Products Table */}
       <div className="bg-white rounded-2xl border border-[#D4C9B8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
@@ -813,7 +805,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         Tip: Scroll horizontally on mobile. Use bulk actions for fast inventory management.
       </div>
 
-      {/* Bulk Category Change Modal */}
       {showBulkCategoryModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
@@ -854,7 +845,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Bulk Price Adjustment Modal */}
       {showBulkPriceModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
@@ -925,7 +915,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Bulk Sale Management Modal */}
       {showBulkSaleModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
@@ -988,48 +977,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Bulk Category Change Modal */}
-      {showBulkCategoryModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h3 className="text-xl font-semibold mb-2">Change Category</h3>
-            <p className="text-sm text-[#6B5F54] mb-4">
-              Update category for <strong>{selectedIds.length}</strong> selected product{selectedIds.length > 1 ? 's' : ''}.
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-[#6B5F54] block mb-1.5">New Category</label>
-                <select
-                  value={bulkNewCategory}
-                  onChange={(e) => setBulkNewCategory(e.target.value)}
-                  className="input-premium w-full"
-                >
-                  {uniqueCategories.filter(c => c !== 'All Categories').map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowBulkCategoryModal(false)}
-                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkCategoryChange}
-                disabled={loading || !bulkNewCategory}
-                className="flex-1 py-3 btn-primary disabled:opacity-60">
-                {loading ? 'Updating...' : 'Apply to Selected'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
       {editingProduct && editForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
@@ -1068,7 +1015,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
