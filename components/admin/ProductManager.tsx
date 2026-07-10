@@ -124,7 +124,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     setSearchTerm('');
     setSelectedCategory('All Categories');
     setStockStatus('all');
-    // Note: selection is kept intentionally
   };
 
   // Toggle sort
@@ -161,10 +160,8 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
 
     if (allVisibleSelected) {
-      // Deselect only the visible ones
       setSelectedIds(selectedIds.filter(id => !visibleIds.includes(id)));
     } else {
-      // Select all visible (merge with existing)
       const newSelected = [...new Set([...selectedIds, ...visibleIds])];
       setSelectedIds(newSelected);
     }
@@ -188,13 +185,11 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     setLoading(true);
 
     try {
-      // Update locally first for instant feedback
       const updatedProducts = products.map(p =>
         selectedIds.includes(p.id) ? { ...p, inStock: newStock } : p
       );
       setProducts(updatedProducts);
 
-      // Fire API calls (non-blocking for UX)
       const updatePromises = selectedIds.map(id =>
         fetch('/api/admin/products/stock', {
           method: 'PATCH',
@@ -225,11 +220,9 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     setLoading(true);
 
     try {
-      // Delete locally first
       const remainingProducts = products.filter(p => !selectedIds.includes(p.id));
       setProducts(remainingProducts);
 
-      // API calls
       const deletePromises = selectedIds.map(id =>
         fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
       );
@@ -315,7 +308,6 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       if (!res.ok) throw new Error('Failed to delete');
 
       setProducts(products.filter(p => p.id !== id));
-      // Also remove from selection if present
       setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
       toast.success('Product deleted');
     } catch (error) {
@@ -440,65 +432,65 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
           <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Filters */}
-          <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-premium w-40 text-sm border-0 focus:ring-0 px-2 py-1"
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent"
-            >
-              {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
-            <select
-              value={stockStatus}
-              onChange={(e) => setStockStatus(e.target.value as StockStatus)}
-              className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent"
-              title="Filter by stock status"
-            >
-              {stockStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-            {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
-              <button onClick={clearFilters} className="text-xs px-2 py-0.5 text-[#6B5F54] hover:text-red-600">Clear</button>
-            )}
-          </div>
+        {/* Filter Bar - Mobile Responsive */}
+        <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full md:w-auto">
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-premium w-full md:w-36 text-sm border-0 focus:ring-0 px-2 py-1"
+          />
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent w-full md:w-auto"
+          >
+            {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+          </select>
+          <select
+            value={stockStatus}
+            onChange={(e) => setStockStatus(e.target.value as StockStatus)}
+            className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent w-full md:w-auto"
+            title="Stock status"
+          >
+            {stockStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+          {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
+            <button onClick={clearFilters} className="text-xs px-3 py-1 text-[#6B5F54] hover:text-red-600 md:ml-1">Clear</button>
+          )}
+        </div>
 
-          <button onClick={openCreate} className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">+ Create New Product</button>
-          <button onClick={handleSeedToDb} disabled={loading} className="px-5 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 flex items-center gap-2">
-            {loading ? 'Processing...' : 'Seed / Sync to Database'}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+          <button onClick={openCreate} className="btn-primary px-4 py-2 text-sm flex-1 md:flex-none">+ Create</button>
+          <button onClick={handleSeedToDb} disabled={loading} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 flex-1 md:flex-none">
+            {loading ? 'Syncing...' : 'Seed DB'}
           </button>
         </div>
       </div>
 
-      {/* Bulk Action Bar */}
+      {/* Bulk Action Bar - Mobile Friendly */}
       {selectedIds.length > 0 && (
-        <div className="flex items-center justify-between bg-[#F8F4EC] border border-[#D4C9B8] rounded-2xl px-5 py-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 bg-[#F8F4EC] border border-[#D4C9B8] rounded-2xl px-4 py-3">
           <div className="font-medium text-sm">
-            {selectedIds.length} product{selectedIds.length > 1 ? 's' : ''} selected
+            {selectedIds.length} selected
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap gap-2 w-full md:w-auto">
             <button
               onClick={handleBulkStockUpdate}
               disabled={loading}
-              className="px-4 py-1.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white transition-colors"
+              className="flex-1 md:flex-none px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white active:bg-white transition-colors"
             >
               Update Stock
             </button>
             <button
               onClick={handleBulkDelete}
               disabled={loading}
-              className="px-4 py-1.5 text-sm border border-red-200 text-red-600 rounded-xl hover:bg-red-50 transition-colors"
+              className="flex-1 md:flex-none px-4 py-2 text-sm border border-red-200 text-red-600 rounded-xl hover:bg-red-50 active:bg-red-50 transition-colors"
             >
-              Delete Selected
+              Delete
             </button>
-            <button onClick={clearSelection} className="px-4 py-1.5 text-sm text-[#6B5F54] hover:text-[#3A2F27]">
+            <button onClick={clearSelection} className="flex-1 md:flex-none px-4 py-2 text-sm text-[#6B5F54] hover:text-[#3A2F27] border border-[#D4C9B8] rounded-xl">
               Clear
             </button>
           </div>
@@ -506,58 +498,53 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       )}
 
       {/* Results count */}
-      {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all' || sortConfig.key !== 'name') && (
-        <div className="text-sm text-[#6B5F54]">Showing {displayedProducts.length} of {products.length} products</div>
+      {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
+        <div className="text-xs md:text-sm text-[#6B5F54]">Showing {displayedProducts.length} of {products.length} products</div>
       )}
 
-      {/* Products Table */}
+      {/* Products Table - Mobile Responsive */}
       <div className="bg-white rounded-2xl border border-[#D4C9B8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="bg-[#F8F4EC] border-b border-[#D4C9B8]">
               <tr>
-                <th className="w-10 p-4">
+                <th className="w-10 p-3 md:p-4 sticky left-0 bg-[#F8F4EC] z-10">
                   <input
                     type="checkbox"
                     checked={displayedProducts.length > 0 && displayedProducts.every(p => selectedIds.includes(p.id))}
                     onChange={toggleSelectAll}
-                    className="accent-[#6B2D3C]"
+                    className="accent-[#6B2D3C] scale-110 md:scale-100"
                   />
                 </th>
                 <th
                   onClick={() => handleSort('name')}
-                  className="text-left p-4 font-medium text-sm cursor-pointer hover:bg-[#F1EDE4] select-none"
+                  className="text-left p-3 md:p-4 font-medium cursor-pointer hover:bg-[#F1EDE4] select-none sticky left-10 bg-[#F8F4EC] z-10 min-w-[180px]"
                 >
                   Product {getSortIndicator('name')}
                 </th>
-                <th
-                  onClick={() => handleSort('name')}
-                  className="text-left p-4 font-medium text-sm cursor-pointer hover:bg-[#F1EDE4] select-none"
-                >
-                  Category
-                </th>
+                <th className="text-left p-3 md:p-4 font-medium text-[#6B5F54] hidden md:table-cell">Category</th>
                 <th
                   onClick={() => handleSort('price')}
-                  className="text-right p-4 font-medium text-sm cursor-pointer hover:bg-[#F1EDE4] select-none"
+                  className="text-right p-3 md:p-4 font-medium cursor-pointer hover:bg-[#F1EDE4] select-none"
                 >
-                  Price (₦) {getSortIndicator('price')}
+                  Price {getSortIndicator('price')}
                 </th>
                 <th
                   onClick={() => handleSort('inStock')}
-                  className="text-center p-4 font-medium text-sm cursor-pointer hover:bg-[#F1EDE4] select-none"
+                  className="text-center p-3 md:p-4 font-medium cursor-pointer hover:bg-[#F1EDE4] select-none min-w-[120px]"
                 >
                   Stock {getSortIndicator('inStock')}
                 </th>
-                <th className="text-right p-4 font-medium text-sm w-48">Actions</th>
+                <th className="text-right p-3 md:p-4 font-medium w-36 md:w-48">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EDE6D9]">
               {displayedProducts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-[#6B5F54]">
+                  <td colSpan={6} className="p-8 text-center text-[#6B5F54] text-sm">
                     {products.length === 0
-                      ? 'No products found. Click "Create New Product" to get started.'
-                      : 'No products match your search/filter criteria.'}
+                      ? 'No products found. Tap "Create" to add your first fabric.'
+                      : 'No products match your current filters.'}
                   </td>
                 </tr>
               )}
@@ -566,27 +553,27 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
                 const checked = isSelected(product.id);
 
                 return (
-                  <tr key={product.id} className="hover:bg-[#F8F4EC] transition-colors">
-                    <td className="p-4">
+                  <tr key={product.id} className="hover:bg-[#F8F4EC] active:bg-[#F1EDE4] transition-colors">
+                    <td className="p-3 md:p-4 sticky left-0 bg-white z-10">
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleSelect(product.id)}
-                        className="accent-[#6B2D3C]"
+                        className="accent-[#6B2D3C] scale-110 md:scale-100"
                       />
                     </td>
-                    <td className="p-4">
-                      <div className="font-medium">{product.name}</div>
-                      <div className="text-xs text-[#6B5F54] mt-0.5">{product.slug}</div>
+                    <td className="p-3 md:p-4 sticky left-10 bg-white z-10 min-w-[180px]">
+                      <div className="font-medium leading-tight">{product.name}</div>
+                      <div className="text-[10px] md:text-xs text-[#6B5F54] mt-0.5 truncate">{product.slug}</div>
                     </td>
-                    <td className="p-4 text-sm text-[#6B5F54]">{product.category}</td>
-                    <td className="p-4 text-right font-medium">
+                    <td className="p-3 md:p-4 text-sm text-[#6B5F54] hidden md:table-cell">{product.category}</td>
+                    <td className="p-3 md:p-4 text-right font-medium whitespace-nowrap">
                       {(product.salePrice || product.price).toLocaleString()}
-                      {product.salePrice && <span className="text-xs text-red-500 line-through ml-1.5">{product.price.toLocaleString()}</span>}
+                      {product.salePrice && <span className="text-[10px] text-red-500 line-through ml-1">{product.price}</span>}
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border ${stockInfo.color}`}>
+                    <td className="p-3 md:p-4">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 text-[10px] md:text-xs font-medium rounded-full border ${stockInfo.color} whitespace-nowrap`}>
                           {product.inStock} {stockInfo.label}
                         </span>
                         <input
@@ -598,19 +585,24 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
                             setProducts(updated);
                           }}
                           onBlur={(e) => updateStock(product.id, parseInt(e.target.value) || 0)}
-                          className="w-14 text-center border border-[#D4C9B8] rounded px-1.5 py-0.5 text-sm"
+                          className="w-12 md:w-14 text-center border border-[#D4C9B8] rounded px-1 py-0.5 text-xs md:text-sm"
                         />
                       </div>
                     </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(product)} className="px-3 py-1.5 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white transition-colors">Edit</button>
+                    <td className="p-3 md:p-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEdit(product)}
+                          className="px-2.5 py-1 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white active:bg-white transition-colors"
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => handleDelete(product.id, product.name)}
                           disabled={deletingId === product.id}
-                          className="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                          className="px-2.5 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 active:bg-red-50 disabled:opacity-50 transition-colors"
                         >
-                          {deletingId === product.id ? 'Deleting...' : 'Delete'}
+                          {deletingId === product.id ? '...' : 'Del'}
                         </button>
                       </div>
                     </td>
@@ -620,6 +612,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="text-[10px] md:text-xs text-[#6B5F54] px-1">
+        Tip: Scroll horizontally on mobile. Tap column headers to sort.
       </div>
 
       {/* Edit Modal */}
@@ -654,7 +650,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={closeEdit} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors">Cancel</button>
+              <button onClick={closeEdit} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">Cancel</button>
               <button onClick={handleSaveEdit} disabled={loading} className="flex-1 py-3 btn-primary">{loading ? 'Saving...' : 'Save Changes'}</button>
             </div>
           </div>
@@ -693,10 +689,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={closeCreate} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors">Cancel</button>
+              <button onClick={closeCreate} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">Cancel</button>
               <button onClick={handleCreate} disabled={loading} className="flex-1 py-3 btn-primary">{loading ? 'Creating...' : 'Create Product'}</button>
             </div>
-            <p className="text-xs text-[#6B5F54] mt-4 text-center">For advanced options (images, specs, lengths), use the full "Add Fabric" form in the header.</p>
+            <p className="text-xs text-[#6B5F54] mt-4 text-center">For full options (images, specs), use the rich "Add Fabric" button in the header.</p>
           </div>
         </div>
       )}
