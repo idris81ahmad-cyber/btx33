@@ -88,8 +88,8 @@ export default function ContactPage() {
           </div>
           <div>
             <div className="font-semibold text-[#2C2522] tracking-tight mb-1">CUSTOMER CARE</div>
-            <div>+234 809 123 4567 (WhatsApp)</div>
-            <div>hello@biyorashop.com</div>
+            <a href="https://wa.me/2349061811134" target="_blank" className="block hover:text-[#C5A46E] transition">+234 906 181 1134 (WhatsApp)</a>
+            <a href="mailto:biyorashop@gmail.com" className="block hover:text-[#C5A46E] transition">biyorashop@gmail.com</a>
           </div>
           <div>
             <div className="font-semibold text-[#2C2522] tracking-tight mb-1">BUSINESS HOURS</div>
