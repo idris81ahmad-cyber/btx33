@@ -40,9 +40,11 @@ export default function Navbar() {
     <nav className="navbar sticky top-0 z-50 border-b border-[#D4C9B8]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-full bg-[#6B2D3C] flex items-center justify-center">
-            <span className="text-[#C5A46E] font-bold text-2xl tracking-[-1.5px]">B</span>
-          </div>
+          <img 
+            src="/biyora-logo.png" 
+            alt="BIYORA SHOP" 
+            className="w-9 h-9 rounded-full object-cover ring-1 ring-[#D4C9B8]" 
+          />
           <div>
             <div className="font-semibold text-xl tracking-[-0.8px] text-[#2C2522]">BIYORA SHOP</div>
             <div className="text-[10px] text-[#6B5F54] -mt-1.5 tracking-[1.5px]">KANO • LAGOS • WORLD</div>
@@ -77,7 +79,7 @@ export default function Navbar() {
           <Link
             href="/calculator"
             className="hidden md:block text-xs tracking-widest text-[#6B5F54] hover:text-[#6B2D3C] px-3 py-1.5"
-          >
+            >
             FABRIC CALC
           </Link>
 
