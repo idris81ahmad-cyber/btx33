@@ -3,6 +3,14 @@ import { Product } from "@/types/product";
 const REPO = "idris81ahmad-cyber/biyora-shop";
 const FILE_PATH = "data/products.json";
 const BRANCH = "master";
+const FETCH_TIMEOUT_MS = 8_000;
+
+function githubFetch(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    signal: init?.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+}
 
 function githubHeaders(): HeadersInit {
   const token = process.env.GITHUB_TOKEN;
@@ -19,15 +27,15 @@ export function hasGitHubStorage(): boolean {
 
 export async function readProductsFromGitHub(): Promise<Product[] | null> {
   try {
-    const res = await fetch(
+    const res = await githubFetch(
       `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}?ref=${BRANCH}`,
-      { headers: githubHeaders(), cache: "no-store" }
+      { headers: githubHeaders(), cache: "no-store" },
     );
 
     if (!res.ok) {
-      const raw = await fetch(
+      const raw = await githubFetch(
         `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${FILE_PATH}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       if (!raw.ok) return null;
       const parsed = await raw.json();

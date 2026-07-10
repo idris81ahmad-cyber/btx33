@@ -18,7 +18,15 @@ import {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-const BLOB_PATHNAME = "biyora/products.json"; // updated from btx3
+const BLOB_PATHNAMES = ["biyora/products.json", "btx3/products.json"];
+const FETCH_TIMEOUT_MS = 8_000;
+
+function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    signal: init?.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+}
 
 function hasBlobStorage(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
@@ -67,24 +75,26 @@ function readProductsFromFilesystem(): Product[] | null {
 }
 
 async function readProductsFromBlob(): Promise<Product[] | null> {
-  try {
-    const { blobs } = await list({ prefix: BLOB_PATHNAME });
-    const blob = blobs.find((b) => b.pathname === BLOB_PATHNAME) ?? blobs[0];
-    if (!blob) return null;
+  for (const pathname of BLOB_PATHNAMES) {
+    try {
+      const { blobs } = await list({ prefix: pathname });
+      const blob = blobs.find((b) => b.pathname === pathname) ?? blobs[0];
+      if (!blob) continue;
 
-    const res = await fetch(blob.downloadUrl, { cache: "no-store" });
-    if (!res.ok) return null;
+      const res = await fetchWithTimeout(blob.downloadUrl, { cache: "no-store" });
+      if (!res.ok) continue;
 
-    const parsed = await res.json();
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-  } catch (e) {
-    console.error("Failed to read products from blob", e);
-    return null;
+      const parsed = await res.json();
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {
+      console.error(`Failed to read products from blob (${pathname})`, e);
+    }
   }
+  return null;
 }
 
 async function writeProductsToBlob(products: Product[]): Promise<void> {
-  await put(BLOB_PATHNAME, JSON.stringify(products, null, 2), {
+  await put(BLOB_PATHNAMES[0], JSON.stringify(products, null, 2), {
     access: "public",
     addRandomSuffix: false,
     contentType: "application/json",

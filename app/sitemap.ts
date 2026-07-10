@@ -1,7 +1,24 @@
 import type { MetadataRoute } from "next";
 import { getProducts } from "@/lib/products-store";
-import { fabricCategories } from "@/lib/products";
+import { fabricCategories, products as defaultProducts } from "@/lib/products";
 import { absoluteUrl } from "@/lib/site";
+
+// Avoid build-time static generation — external Blob/GitHub fetches can exceed 60s
+export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+async function getProductsForSitemap() {
+  try {
+    return await Promise.race([
+      getProducts(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("sitemap product fetch timeout")), 8_000),
+      ),
+    ]);
+  } catch {
+    return defaultProducts;
+  }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages = [
@@ -34,18 +51,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  let productPages: MetadataRoute.Sitemap = [];
-  try {
-    const products = await getProducts();
-    productPages = products.map((product) => ({
-      url: absoluteUrl(`/products/${product.slug}`),
-      lastModified: new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.9,
-    }));
-  } catch {
-    // Fallback when storage unavailable at build time
-  }
+  const products = await getProductsForSitemap();
+  const productPages = products.map((product) => ({
+    url: absoluteUrl(`/products/${product.slug}`),
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.9,
+  }));
 
   return [...staticPages, ...categoryPages, ...productPages];
 }
