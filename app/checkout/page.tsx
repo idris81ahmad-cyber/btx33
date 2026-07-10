@@ -4,13 +4,11 @@ import { useState } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, getTotalPrice } = useCartStore();
   const { data: session } = useSession();
-  const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,7 +21,7 @@ export default function CheckoutPage() {
   });
 
   const subtotal = getTotalPrice();
-  const shippingFee = 2500; // Fixed shipping for now
+  const shippingFee = 2500;
   const total = subtotal + shippingFee;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -45,7 +43,6 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Prepare cart items for metadata
       const cartItems = items.map(item => ({
         productId: item.id,
         name: item.name,
@@ -84,12 +81,11 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (data.success && data.authorizationUrl) {
-        // Redirect to Paystack
         window.location.href = data.authorizationUrl;
       } else {
         toast.error(data.error || 'Failed to initialize payment');
       }
-    } catch (error) {
+    } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -112,7 +108,6 @@ export default function CheckoutPage() {
       <h1 className="text-4xl font-semibold tracking-tight mb-8">Checkout</h1>
 
       <div className="grid lg:grid-cols-5 gap-8">
-        {/* Shipping Form */}
         <div className="lg:col-span-3">
           <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8">
             <h2 className="text-xl font-semibold mb-6">Shipping Information</h2>
@@ -168,7 +163,7 @@ export default function CheckoutPage() {
                   placeholder="15 Kantin Kwari Road"
                   required
                 />
-              </div>
+                </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -203,7 +198,6 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8 sticky top-6">
             <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
