@@ -50,51 +50,52 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const identifier = credentials?.email?.trim() || credentials?.username?.trim();
         const password = credentials?.password;
+
         if (!identifier || !password) return null;
 
-        // DB customer/admin
+        // Try database user first
         const dbUser = await getUserByEmail(identifier.includes("@") ? identifier : `${identifier}@local.biyora`);
-        if (!dbUser) {
-          const byUsername = legacyAdmins.find(
-            (u) => u.username.toLowerCase() === identifier.toLowerCase() || u.email === identifier.toLowerCase(),
-          );
-          if (byUsername) {
-            const valid = await bcrypt.compare(password, byUsername.password);
-            if (!valid) return null;
+
+        if (dbUser) {
+          const valid = await bcrypt.compare(password, dbUser.passwordHash);
+          if (valid) {
             return {
-              id: byUsername.id,
-              name: byUsername.name,
-              email: byUsername.email,
-              role: byUsername.role,
+              id: String(dbUser.id),
+              name: dbUser.name,
+              email: dbUser.email,
+              role: dbUser.role,
             };
           }
-        } else {
-          const valid = await bcrypt.compare(password, dbUser.passwordHash);
-          if (!valid) return null;
-          return {
-            id: String(dbUser.id),
-            name: dbUser.name,
-            email: dbUser.email,
-            role: dbUser.role,
-          };
+          return null;
         }
 
-        // Legacy admin fallback by username
-        const legacy = legacyAdmins.find((u) => u.username.toLowerCase() === identifier.toLowerCase());
+        // Fallback to legacy admins
+        const legacy = legacyAdmins.find(
+          (u) => u.username.toLowerCase() === identifier.toLowerCase() || u.email.toLowerCase() === identifier.toLowerCase()
+        );
+
         if (legacy) {
           const valid = await bcrypt.compare(password, legacy.password);
-          if (!valid) return null;
-          return { id: legacy.id, name: legacy.name, email: legacy.email, role: legacy.role };
+          if (valid) {
+            return {
+              id: legacy.id,
+              name: legacy.name,
+              email: legacy.email,
+              role: legacy.role,
+            };
+          }
         }
 
         return null;
       },
     }),
-  },
+  ],
   pages: {
     signIn: "/login",
   },
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -116,6 +117,7 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
+
 export { handler as GET, handler as POST };
 export { getServerSession };
 
@@ -133,7 +135,6 @@ export async function requireCustomer() {
   return session;
 }
 
-// Strict version that throws for server components / route handlers
 export async function requireAdminOrThrow() {
   const session = await getServerSession(authOptions);
   if (!session || session.user?.role !== "admin") {
