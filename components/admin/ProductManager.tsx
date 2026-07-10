@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
 import { toast } from 'sonner';
 
 interface ProductManagerProps {
   initialProducts: Product[];
+  onCreateNew?: () => void; // Optional: delegate to parent's rich modal if provided
 }
 
 interface EditFormData {
@@ -16,12 +17,19 @@ interface EditFormData {
   category: string;
 }
 
-export default function ProductManager({ initialProducts }: ProductManagerProps) {
+interface CreateFormData extends EditFormData {}
+
+export default function ProductManager({ initialProducts, onCreateNew }: ProductManagerProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  // Sync with parent when initialProducts change
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
   // Open edit modal
   const openEdit = (product: Product) => {
@@ -120,6 +128,86 @@ export default function ProductManager({ initialProducts }: ProductManagerProps)
     }
   };
 
+  // Create New Product - delegate to parent rich modal if available, else use built-in simple modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createForm, setCreateForm] = useState<CreateFormData>({
+    name: '',
+    price: 15000,
+    inStock: 20,
+    category: 'Ankara Prints',
+  });
+
+  const openCreate = () => {
+    if (onCreateNew) {
+      onCreateNew(); // Delegate to parent's rich modal
+      return;
+    }
+    // Fallback to built-in simple create modal
+    setCreateForm({
+      name: '',
+      price: 15000,
+      inStock: 20,
+      category: 'Ankara Prints',
+      salePrice: undefined,
+    });
+    setShowCreateModal(true);
+  };
+
+  const closeCreate = () => {
+    setShowCreateModal(false);
+  };
+
+  const handleCreateFormChange = (field: keyof CreateFormData, value: string | number) => {
+    setCreateForm({ ...createForm, [field]: value });
+  };
+
+  // Create new product
+  const handleCreate = async () => {
+    if (!createForm.name.trim()) {
+      toast.error('Product name is required');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        ...createForm,
+        slug: createForm.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        shortDescription: createForm.name, // fallback
+        description: '',
+        images: [],
+        rating: 4.5,
+        reviewCount: 0,
+        colorFamily: 'Mixed',
+        patternStyle: 'Various',
+        lengthOptions: ['5 yards', '6 yards'],
+        specifications: {},
+      };
+
+      const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to create product');
+      }
+
+      const newProduct = await res.json();
+      setProducts([...products, newProduct]);
+
+      toast.success('New product created successfully');
+      closeCreate();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Seed products to DB
   const handleSeedToDb = async () => {
     setLoading(true);
@@ -147,13 +235,21 @@ export default function ProductManager({ initialProducts }: ProductManagerProps)
           <h2 className="text-2xl font-semibold tracking-tight">Product Management</h2>
           <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
         </div>
-        <button
-          onClick={handleSeedToDb}
-          disabled={loading}
-          className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
-        >
-          {loading ? 'Processing...' : 'Seed / Sync to Database'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={openCreate}
+            className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
+          >
+            + Create New Product
+          </button>
+          <button
+            onClick={handleSeedToDb}
+            disabled={loading}
+            className="px-5 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 transition-colors flex items-center gap-2"
+          >
+            {loading ? 'Processing...' : 'Seed / Sync to Database'}
+          </button>
+        </div>
       </div>
 
       {/* Products Table */}
@@ -173,7 +269,7 @@ export default function ProductManager({ initialProducts }: ProductManagerProps)
               {products.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-[#6B5F54]">
-                    No products found.
+                    No products found. Click "Create New Product" to get started.
                   </td>
                 </tr>
               )}
@@ -309,6 +405,91 @@ export default function ProductManager({ initialProducts }: ProductManagerProps)
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create New Product Modal (simple version; delegates to rich modal if onCreateNew provided) */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-4">Create New Product</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-[#6B5F54] block mb-1.5">Product Name *</label>
+                <input
+                  type="text"
+                  value={createForm.name}
+                  onChange={(e) => handleCreateFormChange('name', e.target.value)}
+                  className="input-premium w-full"
+                  placeholder="e.g. Royal Gold Ankara"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Price (₦) *</label>
+                  <input
+                    type="number"
+                    value={createForm.price}
+                    onChange={(e) => handleCreateFormChange('price', parseInt(e.target.value) || 0)}
+                    className="input-premium w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Sale Price (optional)</label>
+                  <input
+                    type="number"
+                    value={createForm.salePrice || ''}
+                    onChange={(e) => handleCreateFormChange('salePrice', e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="input-premium w-full"
+                    placeholder="No sale"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Initial Stock</label>
+                  <input
+                    type="number"
+                    value={createForm.inStock}
+                    onChange={(e) => handleCreateFormChange('inStock', parseInt(e.target.value) || 0)}
+                    className="input-premium w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-[#6B5F54] block mb-1.5">Category</label>
+                  <input
+                    type="text"
+                    value={createForm.category}
+                    onChange={(e) => handleCreateFormChange('category', e.target.value)}
+                    className="input-premium w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={closeCreate}
+                className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={loading}
+                className="flex-1 py-3 btn-primary"
+              >
+                {loading ? 'Creating...' : 'Create Product'}
+              </button>
+            </div>
+
+            <p className="text-xs text-[#6B5F54] mt-4 text-center">
+              For advanced options (images, specs, lengths), use the full "Add Fabric" form in the header.
+            </p>
           </div>
         </div>
       )}
