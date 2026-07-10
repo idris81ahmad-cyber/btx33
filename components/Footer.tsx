@@ -8,9 +8,11 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-5">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-[#C5A46E] flex items-center justify-center">
-              <span className="text-[#2C2522] font-bold text-xl tracking-[-1px]">B</span>
-            </div>
+            <img 
+              src="/biyora-logo.png" 
+              alt="BIYORA SHOP" 
+              className="w-9 h-9 rounded-full object-cover ring-1 ring-[#C5A46E]/30" 
+            />
             <span className="font-semibold text-xl tracking-[-0.8px] text-white">BIYORA SHOP</span>
           </div>
           <p className="max-w-sm text-[#A89B8A] text-[15px] leading-relaxed">
