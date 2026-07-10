@@ -1,34 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
-interface Order {
-  id: number;
-  orderNumber: string;
-  total: number;
-  status: string;
-  createdAt: string;
-  items: any[];
-}
-
 export default function OrderHistoryPage() {
-  const { data: session, status } = useSession();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { status } = useSession();
 
-  useEffect(() => {
-    if (status === 'authenticated') {
-      // For now, we'll show a message. Full order history can be connected to an API later.
-      // You can expand this by creating an API route that fetches orders by userId.
-      setLoading(false);
-    } else if (status === 'unauthenticated') {
-      setLoading(false);
-    }
-  }, [status]);
-
-  if (status === 'loading' || loading) {
+  if (status === 'loading') {
     return <div className="p-8 text-center">Loading your orders...</div>;
   }
 
