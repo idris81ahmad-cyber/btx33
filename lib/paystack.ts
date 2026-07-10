@@ -1,5 +1,3 @@
-import { NextResponse } from 'next/server';
-
 /**
  * Paystack Integration Helper for BIYORA SHOP
  * 
@@ -95,8 +93,8 @@ export async function verifyPaystackPayment(reference: string) {
  * Webhook verification helper (for future use)
  */
 export function verifyPaystackWebhookSignature(
-  payload: string,
-  signature: string
+  _payload: string,
+  _signature: string
 ): boolean {
   // TODO: Implement proper HMAC verification using PAYSTACK_WEBHOOK_SECRET
   // For now, basic placeholder

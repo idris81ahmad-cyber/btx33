@@ -83,7 +83,7 @@ export default function CheckoutSuccessPage() {
       <div className="text-center mb-10">
         <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
         <h1 className="text-4xl font-semibold tracking-tight mb-2">Payment Successful!</h1>
-        <p className="text-[#6B5F54]">Thank you for your order. We've received your payment.</p>
+        <p className="text-[#6B5F54]">Thank you for your order. We&apos;ve received your payment.</p>
       </div>
 
       <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8 mb-8">

@@ -17,7 +17,7 @@ interface EditFormData {
   category: string;
 }
 
-interface CreateFormData extends EditFormData {}
+type CreateFormData = EditFormData;
 
 // Stock status filter options
 type StockStatus = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
@@ -433,7 +433,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   };
 
   // Handle form changes
-  const handleFormChange = (field: keyof EditFormData, value: string | number) => {
+  const handleFormChange = (field: keyof EditFormData, value: string | number | undefined) => {
     if (!editForm) return;
     setEditForm({ ...editForm, [field]: value });
   };
@@ -527,7 +527,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
   const closeCreate = () => setShowCreateModal(false);
 
-  const handleCreateFormChange = (field: keyof CreateFormData, value: string | number) => {
+  const handleCreateFormChange = (field: keyof CreateFormData, value: string | number | undefined) => {
     setCreateForm({ ...createForm, [field]: value });
   };
 
@@ -1049,7 +1049,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               <button onClick={closeCreate} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">Cancel</button>
               <button onClick={handleCreate} disabled={loading} className="flex-1 py-3 btn-primary">{loading ? 'Creating...' : 'Create Product'}</button>
             </div>
-            <p className="text-xs text-[#6B5F54] mt-4 text-center">For full options (images, specs), use the rich "Add Fabric" button in the header.</p>
+            <p className="text-xs text-[#6B5F54] mt-4 text-center">For full options (images, specs), use the rich &quot;Add Fabric&quot; button in the header.</p>
           </div>
         </div>
       )}

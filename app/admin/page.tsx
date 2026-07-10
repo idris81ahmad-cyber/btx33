@@ -101,19 +101,18 @@ export default function AdminDashboard() {
     }
   }, [activeTab, session]);
 
-  const _quickStockUpdate = async (product: Product, delta: number) => {
-    const newStock = Math.max(0, product.inStock + delta);
-    const res = await fetch(`/api/admin/products/${product.id}`, {
-      method: "PUT",
+  const updateOrderStatus = async (orderNumber: string, status: string) => {
+    const res = await fetch("/api/admin/orders", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ ...product, inStock: newStock }),
+      body: JSON.stringify({ orderNumber, status }),
     });
     if (res.ok) {
-      toast.success(`Stock updated: ${newStock}`);
-      await loadProducts();
+      toast.success(`Order ${orderNumber} → ${status}`);
+      loadOrders();
     } else {
-      toast.error("Stock update failed");
+      toast.error("Failed to update order");
     }
   };
 
@@ -555,7 +554,7 @@ export default function AdminDashboard() {
           <ProductManager initialProducts={products} onCreateNew={openAdd} />
 
           <div className="mt-4 text-xs text-[#6B5F54]">
-            Quick actions in the manager use simple forms. Use the rich "Add Fabric" modal for full details (images, specs, lengths).
+            Quick actions in the manager use simple forms. Use the rich &quot;Add Fabric&quot; modal for full details (images, specs, lengths).
           </div>
         </>
       )}
