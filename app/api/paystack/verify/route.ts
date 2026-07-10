@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPaystackPayment } from '@/lib/paystack';
-import { db } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { orders } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -10,6 +10,11 @@ export async function POST(request: NextRequest) {
 
     if (!reference) {
       return NextResponse.json({ error: 'Reference is required' }, { status: 400 });
+    }
+
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
     // Verify with Paystack
