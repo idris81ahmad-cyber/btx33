@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/types/product';
 import { toast } from 'sonner';
 
 interface ProductManagerProps {
   initialProducts: Product[];
-  onCreateNew?: () => void; // Optional: delegate to parent's rich modal if provided
+  onCreateNew?: () => void;
 }
 
 interface EditFormData {
@@ -26,10 +26,48 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
   // Sync with parent when initialProducts change
   useEffect(() => {
     setProducts(initialProducts);
   }, [initialProducts]);
+
+  // Derived unique categories for filter dropdown
+  const uniqueCategories = useMemo(() => {
+    const cats = Array.from(new Set(products.map(p => p.category)));
+    return ['All Categories', ...cats.sort()];
+  }, [products]);
+
+  // Filtered products based on search and category
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    // Search filter (name, slug, category)
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.slug.toLowerCase().includes(term) ||
+        p.category.toLowerCase().includes(term)
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'All Categories') {
+      result = result.filter(p => p.category === selectedCategory);
+    }
+
+    return result;
+  }, [products, searchTerm, selectedCategory]);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('All Categories');
+  };
 
   // Open edit modal
   const openEdit = (product: Product) => {
@@ -230,12 +268,42 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Product Management</h2>
           <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Search and Filter Controls */}
+          <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-premium w-48 text-sm border-0 focus:ring-0 px-2 py-1"
+            />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent"
+            >
+              {uniqueCategories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {(searchTerm || selectedCategory !== 'All Categories') && (
+              <button
+                onClick={clearFilters}
+                className="text-xs px-2 py-0.5 text-[#6B5F54] hover:text-red-600 transition-colors"
+                title="Clear filters"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           <button
             onClick={openCreate}
             className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2"
@@ -252,6 +320,13 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       </div>
 
+      {/* Results count */}
+      {(searchTerm || selectedCategory !== 'All Categories') && (
+        <div className="text-sm text-[#6B5F54]">
+          Showing {filteredProducts.length} of {products.length} products
+        </div>
+      )}
+
       {/* Products Table */}
       <div className="bg-white rounded-2xl border border-[#D4C9B8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -266,14 +341,17 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
               </tr>
             </thead>
             <tbody className="divide-y divide-[#EDE6D9]">
-              {products.length === 0 && (
+              {filteredProducts.length === 0 && (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-[#6B5F54]">
-                    No products found. Click "Create New Product" to get started.
+                    {products.length === 0 
+                      ? 'No products found. Click "Create New Product" to get started.'
+                      : 'No products match your search/filter criteria.'
+                    }
                   </td>
                 </tr>
               )}
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <tr key={product.id} className="hover:bg-[#F8F4EC] transition-colors">
                   <td className="p-4">
                     <div className="font-medium">{product.name}</div>
@@ -409,7 +487,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {/* Create New Product Modal (simple version; delegates to rich modal if onCreateNew provided) */}
+      {/* Create New Product Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
