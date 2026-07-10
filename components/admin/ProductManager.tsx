@@ -19,6 +19,16 @@ interface EditFormData {
 
 interface CreateFormData extends EditFormData {}
 
+// Stock status filter options
+type StockStatus = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+
+const stockStatusOptions: { value: StockStatus; label: string }[] = [
+  { value: 'all', label: 'All Stock' },
+  { value: 'in_stock', label: 'In Stock (> 0)' },
+  { value: 'low_stock', label: 'Low Stock (1-10)' },
+  { value: 'out_of_stock', label: 'Out of Stock (0)' },
+];
+
 export default function ProductManager({ initialProducts, onCreateNew }: ProductManagerProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
@@ -26,9 +36,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  // Search and filter state
+  // Search, category, and stock status filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
+  const [stockStatus, setStockStatus] = useState<StockStatus>('all');
 
   // Sync with parent when initialProducts change
   useEffect(() => {
@@ -41,7 +52,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     return ['All Categories', ...cats.sort()];
   }, [products]);
 
-  // Filtered products based on search and category
+  // Filtered products based on search, category, and stock status
   const filteredProducts = useMemo(() => {
     let result = products;
 
@@ -60,13 +71,32 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       result = result.filter(p => p.category === selectedCategory);
     }
 
+    // Stock status filter
+    if (stockStatus !== 'all') {
+      if (stockStatus === 'in_stock') {
+        result = result.filter(p => p.inStock > 0);
+      } else if (stockStatus === 'low_stock') {
+        result = result.filter(p => p.inStock > 0 && p.inStock <= 10);
+      } else if (stockStatus === 'out_of_stock') {
+        result = result.filter(p => p.inStock === 0);
+      }
+    }
+
     return result;
-  }, [products, searchTerm, selectedCategory]);
+  }, [products, searchTerm, selectedCategory, stockStatus]);
 
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedCategory('All Categories');
+    setStockStatus('all');
+  };
+
+  // Helper to get stock status label and color for visual polish
+  const getStockStatus = (stock: number) => {
+    if (stock === 0) return { label: 'Out', color: 'text-red-600 bg-red-50 border-red-200' };
+    if (stock <= 10) return { label: 'Low', color: 'text-amber-600 bg-amber-50 border-amber-200' };
+    return { label: 'Good', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
   };
 
   // Open edit modal
@@ -275,14 +305,14 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Search and Filter Controls */}
-          <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5">
+          {/* Search and Filter Controls - Enhanced with Stock Status */}
+          <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap">
             <input
               type="text"
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-premium w-48 text-sm border-0 focus:ring-0 px-2 py-1"
+              className="input-premium w-40 text-sm border-0 focus:ring-0 px-2 py-1"
             />
             <select
               value={selectedCategory}
@@ -293,11 +323,21 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>
-            {(searchTerm || selectedCategory !== 'All Categories') && (
+            <select
+              value={stockStatus}
+              onChange={(e) => setStockStatus(e.target.value as StockStatus)}
+              className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent"
+              title="Filter by stock status"
+            >
+              {stockStatusOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
               <button
                 onClick={clearFilters}
                 className="text-xs px-2 py-0.5 text-[#6B5F54] hover:text-red-600 transition-colors"
-                title="Clear filters"
+                title="Clear all filters"
               >
                 Clear
               </button>
@@ -321,13 +361,13 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       </div>
 
       {/* Results count */}
-      {(searchTerm || selectedCategory !== 'All Categories') && (
+      {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
         <div className="text-sm text-[#6B5F54]">
           Showing {filteredProducts.length} of {products.length} products
         </div>
       )}
 
-      {/* Products Table */}
+      {/* Products Table with Visual Stock Polish */}
       <div className="bg-white rounded-2xl border border-[#D4C9B8] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -351,57 +391,63 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
                   </td>
                 </tr>
               )}
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-[#F8F4EC] transition-colors">
-                  <td className="p-4">
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-xs text-[#6B5F54] mt-0.5">{product.slug}</div>
-                  </td>
-                  <td className="p-4 text-sm text-[#6B5F54]">{product.category}</td>
-                  <td className="p-4 text-right font-medium">
-                    {(product.salePrice || product.price).toLocaleString()}
-                    {product.salePrice && (
-                      <span className="text-xs text-red-500 line-through ml-1.5">
-                        {product.price.toLocaleString()}
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-center gap-2">
-                      <input
-                        type="number"
-                        value={product.inStock}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          const updated = products.map(p =>
-                            p.id === product.id ? { ...p, inStock: val } : p
-                          );
-                          setProducts(updated);
-                        }}
-                        onBlur={(e) => updateStock(product.id, parseInt(e.target.value) || 0)}
-                        className="w-16 text-center border border-[#D4C9B8] rounded px-2 py-1 text-sm"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEdit(product)}
-                        className="px-3 py-1.5 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id, product.name)}
-                        disabled={deletingId === product.id}
-                        className="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                      >
-                        {deletingId === product.id ? 'Deleting...' : 'Delete'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filteredProducts.map((product) => {
+                const stockInfo = getStockStatus(product.inStock);
+                return (
+                  <tr key={product.id} className="hover:bg-[#F8F4EC] transition-colors">
+                    <td className="p-4">
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-xs text-[#6B5F54] mt-0.5">{product.slug}</div>
+                    </td>
+                    <td className="p-4 text-sm text-[#6B5F54]">{product.category}</td>
+                    <td className="p-4 text-right font-medium">
+                      {(product.salePrice || product.price).toLocaleString()}
+                      {product.salePrice && (
+                        <span className="text-xs text-red-500 line-through ml-1.5">
+                          {product.price.toLocaleString()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full border ${stockInfo.color}`}>
+                          {product.inStock} {stockInfo.label}
+                        </span>
+                        <input
+                          type="number"
+                          value={product.inStock}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            const updated = products.map(p =>
+                              p.id === product.id ? { ...p, inStock: val } : p
+                            );
+                            setProducts(updated);
+                          }}
+                          onBlur={(e) => updateStock(product.id, parseInt(e.target.value) || 0)}
+                          className="w-14 text-center border border-[#D4C9B8] rounded px-1.5 py-0.5 text-sm"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(product)}
+                          className="px-3 py-1.5 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(product.id, product.name)}
+                          disabled={deletingId === product.id}
+                          className="px-3 py-1.5 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          {deletingId === product.id ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
