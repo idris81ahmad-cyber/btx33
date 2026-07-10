@@ -101,22 +101,7 @@ export default function AdminDashboard() {
     }
   }, [activeTab, session]);
 
-  const updateOrderStatus = async (orderNumber: string, status: string) => {
-    const res = await fetch("/api/admin/orders", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ orderNumber, status }),
-    });
-    if (res.ok) {
-      toast.success(`Order ${orderNumber} → ${status}`);
-      loadOrders();
-    } else {
-      toast.error("Failed to update order");
-    }
-  };
-
-  const quickStockUpdate = async (product: Product, delta: number) => {
+  const _quickStockUpdate = async (product: Product, delta: number) => {
     const newStock = Math.max(0, product.inStock + delta);
     const res = await fetch(`/api/admin/products/${product.id}`, {
       method: "PUT",
@@ -156,7 +141,6 @@ export default function AdminDashboard() {
       .catch(() => setStorageReady(false));
   }, [session]);
 
-  // Show loading while checking auth
   if (status === "loading" || !session) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -174,7 +158,7 @@ export default function AdminDashboard() {
     setShowModal(true);
   };
 
-  const openEdit = (product: Product) => {
+  const _openEdit = (product: Product) => {
     setEditingProduct(product);
     setForm({
       name: product.name,
@@ -203,7 +187,6 @@ export default function AdminDashboard() {
     setEditingProduct(null);
   };
 
-  // Image handling
   const addImage = (url: string) => {
     if (!url.trim()) return;
     if (form.images.includes(url.trim())) {
@@ -238,7 +221,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Drag and drop for images (URLs or files)
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -269,7 +251,6 @@ export default function AdminDashboard() {
     });
   };
 
-  // Specs
   const addSpecification = () => {
     if (!newSpecKey.trim() || !newSpecValue.trim()) return;
     setForm({
@@ -289,7 +270,6 @@ export default function AdminDashboard() {
     setForm({ ...form, specifications: copy });
   };
 
-  // Length options
   const addLength = (len: string) => {
     if (!len.trim() || form.lengthOptions.includes(len.trim())) return;
     setForm({ ...form, lengthOptions: [...form.lengthOptions, len.trim()] });
@@ -357,7 +337,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDelete = async (product: Product) => {
+  const _handleDelete = async (product: Product) => {
     if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
 
     try {
@@ -383,7 +363,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Simple stats
   const totalProducts = products.length;
   const totalStock = products.reduce((sum, p) => sum + p.inStock, 0);
   const avgRating = totalProducts > 0
@@ -392,7 +371,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
-      {/* Header */}
       {!storageReady && (
         <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950">
           <strong>Product storage is read-only in this environment.</strong>{" "}
@@ -555,7 +533,6 @@ export default function AdminDashboard() {
 
       {activeTab === "products" && (
         <>
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
               <div className="text-sm text-[#6B5F54]">Total Fabrics</div>
@@ -575,7 +552,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Improved Product Manager with Create button wired to rich modal */}
           <ProductManager initialProducts={products} onCreateNew={openAdd} />
 
           <div className="mt-4 text-xs text-[#6B5F54]">
@@ -584,7 +560,6 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* Add / Edit Modal (kept for rich product creation/editing) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={closeModal}>
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-auto" onClick={e => e.stopPropagation()}>
@@ -597,7 +572,6 @@ export default function AdminDashboard() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
-              {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="text-sm text-[#6B5F54] block mb-1.5">Name *</label>
@@ -630,7 +604,6 @@ export default function AdminDashboard() {
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} className="input-premium w-full rounded-3xl px-4 py-3 resize-y" />
               </div>
 
-              {/* Images */}
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-2">Images (add URLs or drop files)</label>
 
@@ -668,7 +641,6 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-              {/* Length Options */}
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-1.5">Available Lengths</label>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -689,7 +661,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Specs */}
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-1.5">Specifications</label>
                 <div className="space-y-1 mb-2 text-sm">
@@ -707,7 +678,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Stock + Rating */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-sm text-[#6B5F54] block mb-1.5">In Stock</label>
