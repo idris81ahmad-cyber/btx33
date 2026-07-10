@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface Order {
   id: number;
@@ -45,7 +45,7 @@ export default function CheckoutSuccessPage() {
         } else {
           setError(data.message || 'Failed to verify payment');
         }
-      } catch (err) {
+      } catch {
         setError('Something went wrong while verifying your payment');
       } finally {
         setLoading(false);
