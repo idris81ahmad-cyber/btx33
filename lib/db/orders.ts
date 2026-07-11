@@ -1,6 +1,8 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { OrderItemJson, ShippingJson } from "./schema";
+
+type OrderStatus = (typeof schema.orderStatusEnum.enumValues)[number];
 
 export interface CreateOrderInput {
   orderNumber: string;
@@ -17,21 +19,32 @@ export interface CreateOrderInput {
   paymentMethod: string;
   notes?: string;
   couponCode?: string;
+  /** Default "confirmed". Use "pending" before Paystack redirect. */
+  status?: OrderStatus;
 }
 
 export async function createOrder(input: CreateOrderInput) {
   const db = getDb();
   if (!db) return null;
+
+  // Never pass NaN / invalid FKs — legacy admin ids like "admin-1" parse badly
+  const userId =
+    typeof input.userId === "number" &&
+    Number.isInteger(input.userId) &&
+    input.userId > 0
+      ? input.userId
+      : null;
+
   try {
     const [order] = await db
       .insert(schema.orders)
       .values({
         orderNumber: input.orderNumber,
-        userId: input.userId ?? null,
+        userId,
         email: input.email,
         fullName: input.fullName,
-        phone: input.phone,
-        status: "confirmed",
+        phone: input.phone || "N/A",
+        status: input.status ?? "confirmed",
         items: input.items,
         shipping: input.shipping,
         subtotal: input.subtotal,
@@ -46,6 +59,31 @@ export async function createOrder(input: CreateOrderInput) {
     return order;
   } catch (e) {
     console.error("createOrder failed:", e);
+    return null;
+  }
+}
+
+/**
+ * Atomically move an order from pending → confirmed.
+ * Returns the updated row only for the winner (avoids double stock/email).
+ */
+export async function confirmPendingOrder(orderNumber: string) {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const [order] = await db
+      .update(schema.orders)
+      .set({ status: "confirmed" })
+      .where(
+        and(
+          eq(schema.orders.orderNumber, orderNumber),
+          eq(schema.orders.status, "pending"),
+        ),
+      )
+      .returning();
+    return order ?? null;
+  } catch (e) {
+    console.error("confirmPendingOrder failed:", e);
     return null;
   }
 }

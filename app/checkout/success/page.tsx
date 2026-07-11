@@ -22,7 +22,9 @@ interface Order {
 
 function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
-  const reference = searchParams.get("reference");
+  // Paystack may send `reference` and/or `trxref`
+  const reference =
+    searchParams.get("reference") || searchParams.get("trxref");
   const clearCart = useCartStore((s) => s.clearCart);
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -31,77 +33,99 @@ function CheckoutSuccessContent() {
   const [emailSent, setEmailSent] = useState(false);
   const [emailDemo, setEmailDemo] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const verifyPayment = useCallback(async () => {
-    if (!reference) {
-      setError("No payment reference found. Return to checkout and try again.");
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/paystack/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reference }),
-      });
-
-      let data: {
-        success?: boolean;
-        order?: Order;
-        message?: string;
-        error?: string;
-        emailSent?: boolean;
-        emailDemo?: boolean;
-        alreadyExists?: boolean;
-      };
-
-      try {
-        data = (await res.json()) as typeof data;
-      } catch {
-        throw new Error("Invalid response while verifying payment");
-      }
-
-      if (!res.ok) {
-        const mapped = mapVerifyError(res.status, data.error || data.message);
-        setError(`${mapped.title}: ${mapped.message}`);
+  const verifyPayment = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!reference) {
+        setError("No payment reference found. Return to checkout and try again.");
+        setLoading(false);
         return;
       }
 
-      // Payment was successful on Paystack side
-      if (data.success) {
-        setPaymentConfirmed(true);
-        clearCart();
-
-        if (data.order) {
-          setOrder(data.order);
-          setEmailSent(Boolean(data.emailSent));
-          setEmailDemo(Boolean(data.emailDemo));
-        } else {
-          // Order might not have been saved (e.g. DB issue), but payment succeeded
-          setError("Payment confirmed by Paystack, but we could not save the order details. Please contact support with your reference.");
-        }
-      } else {
-        const mapped = mapVerifyError(400, data.message || data.error);
-        setError(`${mapped.title}: ${mapped.message}`);
+      if (!opts?.silent) {
+        setLoading(true);
+        setError("");
       }
-    } catch (err) {
-      const mapped = mapVerifyError(
-        0,
-        err instanceof Error ? err.message : "Network error while verifying payment.",
-      );
-      setError(`${mapped.title}: ${mapped.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [reference, clearCart]);
+
+      try {
+        const res = await fetch("/api/paystack/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference }),
+        });
+
+        let data: {
+          success?: boolean;
+          order?: Order;
+          message?: string;
+          error?: string;
+          emailSent?: boolean;
+          emailDemo?: boolean;
+          alreadyExists?: boolean;
+        };
+
+        try {
+          data = (await res.json()) as typeof data;
+        } catch {
+          throw new Error("Invalid response while verifying payment");
+        }
+
+        if (!res.ok) {
+          const mapped = mapVerifyError(res.status, data.error || data.message);
+          setError(`${mapped.title}: ${mapped.message}`);
+          return;
+        }
+
+        // Payment was successful on Paystack side
+        if (data.success) {
+          setPaymentConfirmed(true);
+          clearCart();
+          setError("");
+
+          if (data.order) {
+            setOrder(data.order);
+            setEmailSent(Boolean(data.emailSent));
+            setEmailDemo(Boolean(data.emailDemo));
+          } else {
+            // Order might not have been saved (e.g. DB issue), but payment succeeded
+            setError(
+              "Payment confirmed by Paystack, but we could not save the order details. Please contact support with your reference.",
+            );
+          }
+        } else {
+          const mapped = mapVerifyError(400, data.message || data.error);
+          setError(`${mapped.title}: ${mapped.message}`);
+        }
+      } catch (err) {
+        const mapped = mapVerifyError(
+          0,
+          err instanceof Error ? err.message : "Network error while verifying payment.",
+        );
+        setError(`${mapped.title}: ${mapped.message}`);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [reference, clearCart],
+  );
 
   useEffect(() => {
-    verifyPayment();
+    void verifyPayment();
   }, [verifyPayment]);
+
+  // Auto-retry a few times — webhook or Paystack verify can lag right after redirect
+  useEffect(() => {
+    if (order || paymentConfirmed || !reference || !error) return;
+    if (retryCount >= 4) return;
+
+    const timer = setTimeout(() => {
+      setRetryCount((n) => n + 1);
+      void verifyPayment({ silent: true });
+    }, 2000 * (retryCount + 1));
+
+    return () => clearTimeout(timer);
+  }, [order, paymentConfirmed, reference, error, retryCount, verifyPayment]);
 
   if (loading) {
     return (
@@ -115,7 +139,6 @@ function CheckoutSuccessContent() {
     );
   }
 
-  // Show success even if order details couldn't be saved
   if (paymentConfirmed && order) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-16">
@@ -150,10 +173,13 @@ function CheckoutSuccessContent() {
               <div className="pt-3 mt-3 border-t border-[#EDE6D9]">
                 <div className="text-[#6B5F54] mb-1">Delivery to</div>
                 <div className="text-[#2C2522] leading-relaxed">
-                  {order.shipping.fullName || order.fullName}<br />
-                  {order.shipping.address}<br />
+                  {order.shipping.fullName || order.fullName}
+                  <br />
+                  {order.shipping.address}
+                  <br />
                   {order.shipping.city}, {order.shipping.state}
-                  {order.shipping.postalCode ? ` ${order.shipping.postalCode}` : ""}<br />
+                  {order.shipping.postalCode ? ` ${order.shipping.postalCode}` : ""}
+                  <br />
                   {order.shipping.country ?? "Nigeria"}
                 </div>
               </div>
@@ -187,13 +213,17 @@ function CheckoutSuccessContent() {
     );
   }
 
-  // Error / Pending state
+  // Error / pending / paid-but-no-order-row
   if (error || !order) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center">
-        <AlertCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
+        <AlertCircle
+          className={`w-12 h-12 mx-auto mb-4 ${
+            paymentConfirmed ? "text-emerald-600" : "text-amber-600"
+          }`}
+        />
         <div className="text-[#2C2522] font-semibold text-xl mb-2">
-          {paymentConfirmed ? "Payment Confirmed" : "Payment Verification"}
+          {paymentConfirmed ? "Payment Confirmed" : "Payment verification pending"}
         </div>
         <p className="text-[#6B5F54] mb-6">{error || "We could not confirm your payment."}</p>
 
@@ -203,7 +233,8 @@ function CheckoutSuccessContent() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={verifyPayment}
+            type="button"
+            onClick={() => void verifyPayment()}
             disabled={loading}
             className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-70"
           >
@@ -216,15 +247,21 @@ function CheckoutSuccessContent() {
               <>
                 <RefreshCw className="w-4 h-4" />
                 Retry verification
-              </button>
-          <Link href="/contact" className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white">
+              </>
+            )}
+          </button>
+          <Link
+            href="/contact"
+            className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white"
+          >
             Contact support
           </Link>
         </div>
 
         {paymentConfirmed && (
           <p className="text-xs text-[#6B5F54] mt-6 max-w-xs mx-auto">
-            Your payment was successful. If this issue persists, please contact support with the reference above.
+            Your payment was successful. If this issue persists, please contact support with the
+            reference above.
           </p>
         )}
       </div>
