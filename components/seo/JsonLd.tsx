@@ -2,12 +2,12 @@ import { absoluteUrl, siteConfig } from "@/lib/site";
 import type { Product } from "@/types/product";
 
 export function OrganizationJsonLd() {
-  const data = {
+  const organization = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: absoluteUrl("/favicon.ico"),
+    logo: absoluteUrl("/biyora-logo.png"),
     description: siteConfig.description,
     email: siteConfig.email,
     address: {
@@ -17,11 +17,33 @@ export function OrganizationJsonLd() {
     },
   };
 
+  const website = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteConfig.name,
+    url: siteConfig.url,
+    description: siteConfig.description,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteConfig.url}/shop?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
+      />
+    </>
   );
 }
 

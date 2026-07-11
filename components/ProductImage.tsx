@@ -51,6 +51,7 @@ export default function ProductImage({
         fill
         sizes={sizes}
         priority={priority}
+        quality={85}
         className={cn(fitClass, className)}
         {...blurProps}
       />
@@ -65,6 +66,7 @@ export default function ProductImage({
       height={height ?? 300}
       sizes={sizes}
       priority={priority}
+      quality={85}
       className={cn(fitClass, className)}
       {...blurProps}
     />

@@ -1,7 +1,7 @@
 import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
-  title: "FAQ | BIYORA SHOP",
+  title: "FAQ",
   description: "Frequently asked questions about ordering premium African textiles, shipping, returns, and fabric care.",
   path: "/faq",
 });

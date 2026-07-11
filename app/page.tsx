@@ -7,6 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/types/product";
 import { fabricCategories, categoryShopHref } from "@/lib/products";
 import RecentlyViewed from "@/components/RecentlyViewed";
+import ProductGridSkeleton from "@/components/ProductGridSkeleton";
 import { useEffect, useMemo, useState } from "react";
 
 const trustSignals = [
@@ -123,16 +124,9 @@ export default function Home() {
               </motion.div>
             ))
           ) : (
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-3xl border border-[#D4C9B8] overflow-hidden">
-                <div className="aspect-[4/3.2] skeleton" />
-                <div className="p-5 space-y-2">
-                  <div className="h-3 w-20 skeleton rounded" />
-                  <div className="h-4 w-3/4 skeleton rounded" />
-                  <div className="h-6 w-1/2 mt-3 skeleton rounded" />
-                </div>
-              </div>
-            ))
+            <div className="col-span-full">
+              <ProductGridSkeleton count={6} />
+            </div>
           )}
         </div>
 

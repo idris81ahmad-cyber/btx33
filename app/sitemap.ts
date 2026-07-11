@@ -21,27 +21,25 @@ async function getProductsForSitemap() {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Public, indexable marketing & commerce pages only (no cart/auth/checkout)
   const staticPages = [
-    "",
-    "/shop",
-    "/about",
-    "/journal",
-    "/journal/fabric-care",
-    "/journal/choosing-lace",
-    "/journal/styling-tips",
-    "/journal/meet-artisans",
-    "/calculator",
-    "/wholesale",
-    "/contact",
-    "/faq",
-    "/cart",
-    "/login",
-    "/signup",
-  ].map((path) => ({
+    { path: "", priority: 1, changeFrequency: "daily" as const },
+    { path: "/shop", priority: 0.95, changeFrequency: "daily" as const },
+    { path: "/about", priority: 0.7, changeFrequency: "monthly" as const },
+    { path: "/journal", priority: 0.75, changeFrequency: "weekly" as const },
+    { path: "/journal/fabric-care", priority: 0.65, changeFrequency: "monthly" as const },
+    { path: "/journal/choosing-lace", priority: 0.65, changeFrequency: "monthly" as const },
+    { path: "/journal/styling-tips", priority: 0.65, changeFrequency: "monthly" as const },
+    { path: "/journal/meet-artisans", priority: 0.65, changeFrequency: "monthly" as const },
+    { path: "/calculator", priority: 0.7, changeFrequency: "monthly" as const },
+    { path: "/wholesale", priority: 0.8, changeFrequency: "weekly" as const },
+    { path: "/contact", priority: 0.6, changeFrequency: "monthly" as const },
+    { path: "/faq", priority: 0.6, changeFrequency: "monthly" as const },
+  ].map(({ path, priority, changeFrequency }) => ({
     url: absoluteUrl(path),
     lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: path === "" ? 1 : 0.8,
+    changeFrequency,
+    priority,
   }));
 
   const categoryPages = fabricCategories.map((category) => ({

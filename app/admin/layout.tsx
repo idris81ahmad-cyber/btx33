@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
 import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
@@ -9,16 +7,10 @@ export const metadata = createPageMetadata({
   noIndex: true,
 });
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const session = await requireAdmin();
-
-  if (!session) {
-    redirect("/admin/login");
-  }
-
-  return <>{children}</>;
+/**
+ * Auth is enforced by middleware.ts for /admin/* (except /admin/login).
+ * Page-level useSession still guards client UI.
+ */
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return children;
 }

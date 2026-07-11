@@ -16,10 +16,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const product = products.find((p) => p.slug === slug);
 
   if (!product) {
-    return { title: "Product Not Found | BIYORA SHOP" };
+    return { title: "Product Not Found" };
   }
 
-  const title = `${product.name} | ${product.category} | BIYORA SHOP`;
+  const title = `${product.name} · ${product.category}`;
   const description = product.shortDescription;
   const image = product.images[0]?.startsWith("http")
     ? product.images[0]
