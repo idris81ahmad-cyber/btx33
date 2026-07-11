@@ -50,6 +50,21 @@ export async function createOrder(input: CreateOrderInput) {
   }
 }
 
+export async function getOrderByNumber(orderNumber: string) {
+  const db = getDb();
+  if (!db) return null;
+  try {
+    const [order] = await db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.orderNumber, orderNumber))
+      .limit(1);
+    return order ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getAllOrders() {
   const db = getDb();
   if (!db) return [];

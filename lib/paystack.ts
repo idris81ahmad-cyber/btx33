@@ -1,27 +1,25 @@
-/**
- * Paystack Integration Helper for BIYORA SHOP
- * 
- * Usage:
- * - Initialize transaction on checkout
- * - Verify transaction on success/webhook
- */
+import { createHmac, timingSafeEqual } from "crypto";
+import type {
+  PaystackPaymentMetadata,
+  PaystackVerifyResponse,
+} from "@/lib/paystack-types";
 
-const PAYSTACK_BASE = 'https://api.paystack.co';
+const PAYSTACK_BASE = "https://api.paystack.co";
 
 const getPaystackSecret = () => {
   const key = process.env.PAYSTACK_SECRET_KEY;
   if (!key) {
-    throw new Error('PAYSTACK_SECRET_KEY is not set in environment variables');
+    throw new Error("PAYSTACK_SECRET_KEY is not set in environment variables");
   }
   return key;
 };
 
 interface InitializePaymentParams {
   email: string;
-  amount: number; // in kobo (multiply NGN by 100)
+  amount: number;
   reference?: string;
   callback_url?: string;
-  metadata?: Record<string, any>;
+  metadata?: PaystackPaymentMetadata;
 }
 
 interface PaystackInitializeResponse {
@@ -34,69 +32,72 @@ interface PaystackInitializeResponse {
   };
 }
 
-/**
- * Initialize a Paystack transaction
- */
+export function isPaystackConfigured(): boolean {
+  return Boolean(process.env.PAYSTACK_SECRET_KEY);
+}
+
 export async function initializePaystackPayment(
-  params: InitializePaymentParams
+  params: InitializePaymentParams,
 ): Promise<PaystackInitializeResponse> {
   const secretKey = getPaystackSecret();
 
   const response = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${secretKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       email: params.email,
-      amount: params.amount, // Paystack expects kobo
+      amount: params.amount,
       reference: params.reference,
       callback_url: params.callback_url,
       metadata: params.metadata,
-      channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+      channels: ["card", "bank", "ussd", "qr", "mobile_money", "bank_transfer"],
     }),
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to initialize Paystack payment');
+    const error = (await response.json()) as { message?: string };
+    throw new Error(error.message || "Failed to initialize Paystack payment");
   }
 
-  return response.json();
+  return response.json() as Promise<PaystackInitializeResponse>;
 }
 
-/**
- * Verify a Paystack transaction
- */
-export async function verifyPaystackPayment(reference: string) {
+export async function verifyPaystackPayment(reference: string): Promise<PaystackVerifyResponse> {
   const secretKey = getPaystackSecret();
 
-  const response = await fetch(
-    `${PAYSTACK_BASE}/transaction/verify/${reference}`,
-    {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-      },
-    }
-  );
+  const response = await fetch(`${PAYSTACK_BASE}/transaction/verify/${reference}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+    },
+  });
 
   if (!response.ok) {
-    throw new Error('Failed to verify Paystack payment');
+    throw new Error("Failed to verify Paystack payment");
   }
 
-  return response.json();
+  return response.json() as Promise<PaystackVerifyResponse>;
 }
 
 /**
- * Webhook verification helper (for future use)
+ * Verify Paystack webhook signature (HMAC SHA512 of raw body).
+ * @see https://paystack.com/docs/payments/webhooks/
  */
-export function verifyPaystackWebhookSignature(
-  _payload: string,
-  _signature: string
-): boolean {
-  // TODO: Implement proper HMAC verification using PAYSTACK_WEBHOOK_SECRET
-  // For now, basic placeholder
-  return true;
+export function verifyPaystackWebhookSignature(payload: string, signature: string | null): boolean {
+  if (!signature) return false;
+
+  try {
+    const secret = getPaystackSecret();
+    const hash = createHmac("sha512", secret).update(payload).digest("hex");
+    const hashBuffer = Buffer.from(hash, "hex");
+    const signatureBuffer = Buffer.from(signature, "hex");
+
+    if (hashBuffer.length !== signatureBuffer.length) return false;
+    return timingSafeEqual(hashBuffer, signatureBuffer);
+  } catch {
+    return false;
+  }
 }

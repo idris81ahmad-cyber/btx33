@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { CheckCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { CheckCircle, Loader2, RefreshCw } from "lucide-react";
+import { useCartStore } from "@/lib/cart-store";
+import type { OrderItemJson } from "@/lib/db/schema";
 
 interface Order {
   id: number;
@@ -13,54 +15,70 @@ interface Order {
   total: number;
   status: string;
   createdAt: string;
-  items: any[];
+  items: OrderItemJson[];
 }
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams();
-  const reference = searchParams.get('reference');
+  const reference = searchParams.get("reference");
+  const clearCart = useCartStore((s) => s.clearCart);
+
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  useEffect(() => {
+  const verifyPayment = useCallback(async () => {
     if (!reference) {
-      setError('No payment reference found');
+      setError("No payment reference found. Return to checkout and try again.");
       setLoading(false);
       return;
     }
 
-    const verifyPayment = async () => {
-      try {
-        const res = await fetch('/api/paystack/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reference }),
-        });
+    setLoading(true);
+    setError("");
 
-        const data = await res.json();
+    try {
+      const res = await fetch("/api/paystack/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference }),
+      });
 
-        if (data.success && data.order) {
-          setOrder(data.order);
-        } else {
-          setError(data.message || 'Failed to verify payment');
-        }
-      } catch {
-        setError('Something went wrong while verifying your payment');
-      } finally {
-        setLoading(false);
+      const data = (await res.json()) as {
+        success?: boolean;
+        order?: Order;
+        message?: string;
+        error?: string;
+      };
+
+      if (data.success && data.order) {
+        setOrder(data.order);
+        clearCart();
+      } else {
+        setError(
+          data.message ||
+            data.error ||
+            "We could not confirm your payment yet. If you were charged, your order will be confirmed shortly.",
+        );
       }
-    };
+    } catch {
+      setError("Network error while verifying payment. Please retry in a moment.");
+    } finally {
+      setLoading(false);
+    }
+  }, [reference, clearCart]);
 
+  useEffect(() => {
     verifyPayment();
-  }, [reference]);
+  }, [verifyPayment]);
 
   if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6B2D3C] mx-auto mb-4"></div>
-          <p className="text-[#6B5F54]">Verifying your payment...</p>
+          <Loader2 className="w-12 h-12 text-[#6B2D3C] animate-spin mx-auto mb-4" />
+          <p className="text-[#6B5F54]">Verifying your payment…</p>
+          <p className="text-xs text-[#6B5F54] mt-2">Please do not close this page.</p>
         </div>
       </div>
     );
@@ -69,11 +87,23 @@ export default function CheckoutSuccessPage() {
   if (error || !order) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center">
-        <div className="text-red-500 mb-4">Payment verification failed</div>
-        <p className="text-[#6B5F54] mb-6">{error || 'We could not confirm your payment.'}</p>
-        <Link href="/shop" className="btn-primary inline-block px-8 py-3">
-          Continue Shopping
-        </Link>
+        <div className="text-red-600 font-medium mb-2">Payment verification pending</div>
+        <p className="text-[#6B5F54] mb-6">{error || "We could not confirm your payment."}</p>
+        {reference && (
+          <p className="text-xs font-mono text-[#6B5F54] mb-6">Reference: {reference}</p>
+        )}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            onClick={verifyPayment}
+            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry verification
+          </button>
+          <Link href="/contact" className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white">
+            Contact support
+          </Link>
+        </div>
       </div>
     );
   }
@@ -111,15 +141,12 @@ export default function CheckoutSuccessPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link 
-          href="/shop" 
-          className="btn-primary px-8 py-3 flex-1 sm:flex-none justify-center"
-        >
+        <Link href="/shop" className="btn-primary px-8 py-3 flex-1 sm:flex-none justify-center text-center">
           Continue Shopping
         </Link>
-        <Link 
-          href="/account/orders" 
-          className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none justify-center"
+        <Link
+          href="/account/orders"
+          className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center"
         >
           View My Orders
         </Link>
