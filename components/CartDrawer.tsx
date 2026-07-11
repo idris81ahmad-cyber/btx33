@@ -15,6 +15,7 @@ import { productImageAlt } from "@/lib/image-blur";
 import { useCartStore } from "@/lib/cart-store";
 import { useUIStore } from "@/lib/ui-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
+import { cartItemToProduct } from "@/lib/cart-utils";
 import { toast } from "sonner";
 
 export default function CartDrawer() {
@@ -24,8 +25,7 @@ export default function CartDrawer() {
   const total = getTotalPrice();
 
   const saveForLater = (item: (typeof items)[0]) => {
-    const { quantity: _q, selectedLength: _l, currentPrice: _p, ...product } = item;
-    addToWishlist(product as import("@/types/product").Product);
+    addToWishlist(cartItemToProduct(item));
     removeFromCart(item.id, item.selectedLength);
     toast.success("Saved for later", { description: item.name });
   };

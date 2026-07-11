@@ -1,4 +1,4 @@
-use client";
+"use client";
 
 import { useState, useEffect, useMemo } from 'react';
 import { Product } from '@/types/product';
@@ -7,6 +7,10 @@ import { toast } from 'sonner';
 interface ProductManagerProps {
   initialProducts: Product[];
   onCreateNew?: () => void;
+  onEditProduct?: (product: Product) => void;
+  onMutate?: () => void;
+  /** Hides the standalone page header when embedded in the admin dashboard */
+  embedded?: boolean;
 }
 
 interface EditFormData {
@@ -17,7 +21,7 @@ interface EditFormData {
   category: string;
 }
 
-interface CreateFormData extends EditFormData {}
+type CreateFormData = EditFormData;
 
 // Stock status filter options
 type StockStatus = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
@@ -36,7 +40,13 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
-export default function ProductManager({ initialProducts, onCreateNew }: ProductManagerProps) {
+export default function ProductManager({
+  initialProducts,
+  onCreateNew,
+  onEditProduct,
+  onMutate,
+  embedded = false,
+}: ProductManagerProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -248,6 +258,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success(`Stock updated to ${newStock} for ${selectedIds.length} products`);
       clearSelection();
+      onMutate?.();
     } catch {
       toast.error('Some updates may have failed');
     } finally {
@@ -287,6 +298,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success(`Category changed to "${bulkNewCategory}" for ${selectedIds.length} products`);
       clearSelection();
+      onMutate?.();
     } catch {
       toast.error('Some category updates may have failed');
     } finally {
@@ -344,6 +356,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       const actionText = `${priceAdjustmentDirection === 'increase' ? '+' : '-'}${priceAdjustmentValue}${priceAdjustmentType === 'percentage' ? '%' : ' ₦'}`;
       toast.success(`Prices adjusted by ${actionText} for ${selectedIds.length} products`);
       clearSelection();
+      onMutate?.();
     } catch {
       toast.error('Some price updates may have failed');
     } finally {
@@ -398,6 +411,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         : `Sale price set for ${selectedIds.length} products`;
       toast.success(message);
       clearSelection();
+      onMutate?.();
     } catch {
       toast.error('Some sale updates may have failed');
     } finally {
@@ -427,6 +441,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
           toast.success(`Deleted ${selectedIds.length} products`);
           clearSelection();
+          onMutate?.();
         } catch {
           toast.error('Some deletions may have failed');
         } finally {
@@ -443,8 +458,11 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
     return { label: 'Good', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
   };
 
-  // Open edit modal
-  const openEdit = (product: Product) => {
+  const startEdit = (product: Product) => {
+    if (onEditProduct) {
+      onEditProduct(product);
+      return;
+    }
     setEditingProduct(product);
     setEditForm({
       name: product.name,
@@ -488,6 +506,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
 
       toast.success('Product updated successfully');
       closeEdit();
+      onMutate?.();
     } catch {
       toast.error('Failed to update product');
     } finally {
@@ -510,6 +529,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
           setProducts(products.filter(p => p.id !== id));
           setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
           toast.success('Product deleted');
+          onMutate?.();
         } catch {
           toast.error('Failed to delete product');
         } finally {
@@ -601,6 +621,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
       setProducts([...products, newProduct]);
       toast.success('New product created successfully');
       closeCreate();
+      onMutate?.();
     } catch {
       toast.error('Failed to create product');
     } finally {
@@ -629,12 +650,14 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Product Management</h2>
-          <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
-        </div>
+        {!embedded && (
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Product Management</h2>
+            <p className="text-sm text-[#6B5F54] mt-1">Manage your premium textile catalog</p>
+          </div>
+        )}
 
-        <div className="flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full md:w-auto">
+        <div className={`flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full ${embedded ? "" : "md:w-auto"}`}>
           <input
             type="text"
             placeholder="Search..."
@@ -811,10 +834,10 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
                     <td className="p-3 md:p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => openEdit(product)}
+                          onClick={() => startEdit(product)}
                           className="px-2.5 py-1 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white active:bg-white transition-colors"
                         >
-                          Edit
+                          {onEditProduct ? "Full edit" : "Edit"}
                         </button>
                         <button
                           onClick={() => handleDelete(product.id, product.name)}
@@ -1034,7 +1057,7 @@ export default function ProductManager({ initialProducts, onCreateNew }: Product
         </div>
       )}
 
-      {editingProduct && editForm && (
+      {!onEditProduct && editingProduct && editForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
             <h3 className="text-xl font-semibold mb-4">Edit Product</h3>

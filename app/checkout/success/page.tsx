@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
-import type { OrderItemJson } from "@/lib/db/schema";
+import { mapVerifyError } from "@/lib/checkout-errors";
+import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 
 interface Order {
   id: number;
@@ -16,9 +17,10 @@ interface Order {
   status: string;
   createdAt: string;
   items: OrderItemJson[];
+  shipping?: ShippingJson;
 }
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
   const clearCart = useCartStore((s) => s.clearCart);
@@ -26,6 +28,8 @@ export default function CheckoutSuccessPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailDemo, setEmailDemo] = useState(false);
 
   const verifyPayment = useCallback(async () => {
     if (!reference) {
@@ -44,25 +48,42 @@ export default function CheckoutSuccessPage() {
         body: JSON.stringify({ reference }),
       });
 
-      const data = (await res.json()) as {
+      let data: {
         success?: boolean;
         order?: Order;
         message?: string;
         error?: string;
+        emailSent?: boolean;
+        emailDemo?: boolean;
       };
+
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        throw new Error("Invalid response while verifying payment");
+      }
+
+      if (!res.ok) {
+        const mapped = mapVerifyError(res.status, data.error || data.message);
+        setError(`${mapped.title}: ${mapped.message}`);
+        return;
+      }
 
       if (data.success && data.order) {
         setOrder(data.order);
+        setEmailSent(Boolean(data.emailSent));
+        setEmailDemo(Boolean(data.emailDemo));
         clearCart();
       } else {
-        setError(
-          data.message ||
-            data.error ||
-            "We could not confirm your payment yet. If you were charged, your order will be confirmed shortly.",
-        );
+        const mapped = mapVerifyError(400, data.message || data.error);
+        setError(`${mapped.title}: ${mapped.message}`);
       }
-    } catch {
-      setError("Network error while verifying payment. Please retry in a moment.");
+    } catch (err) {
+      const mapped = mapVerifyError(
+        0,
+        err instanceof Error ? err.message : "Network error while verifying payment.",
+      );
+      setError(`${mapped.title}: ${mapped.message}`);
     } finally {
       setLoading(false);
     }
@@ -87,7 +108,8 @@ export default function CheckoutSuccessPage() {
   if (error || !order) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center">
-        <div className="text-red-600 font-medium mb-2">Payment verification pending</div>
+        <AlertCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
+        <div className="text-[#2C2522] font-semibold text-xl mb-2">Payment verification pending</div>
         <p className="text-[#6B5F54] mb-6">{error || "We could not confirm your payment."}</p>
         {reference && (
           <p className="text-xs font-mono text-[#6B5F54] mb-6">Reference: {reference}</p>
@@ -95,10 +117,20 @@ export default function CheckoutSuccessPage() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={verifyPayment}
-            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3"
+            disabled={loading}
+            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-70"
           >
-            <RefreshCw className="w-4 h-4" />
-            Retry verification
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Retrying…
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Retry verification
+              </>
+            )}
           </button>
           <Link href="/contact" className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white">
             Contact support
@@ -137,6 +169,18 @@ export default function CheckoutSuccessPage() {
             <span className="text-[#6B5F54]">Status</span>
             <span className="capitalize text-emerald-600 font-medium">{order.status}</span>
           </div>
+          {order.shipping && (
+            <div className="pt-3 mt-3 border-t border-[#EDE6D9]">
+              <div className="text-[#6B5F54] mb-1">Delivery to</div>
+              <div className="text-[#2C2522] leading-relaxed">
+                {order.shipping.fullName || order.fullName}<br />
+                {order.shipping.address}<br />
+                {order.shipping.city}, {order.shipping.state}
+                {order.shipping.postalCode ? ` ${order.shipping.postalCode}` : ""}<br />
+                {order.shipping.country ?? "Nigeria"}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -152,9 +196,30 @@ export default function CheckoutSuccessPage() {
         </Link>
       </div>
 
-      <p className="text-center text-xs text-[#6B5F54] mt-8">
-        A confirmation email has been sent to {order.email}
-      </p>
+      <div className="text-center text-xs text-[#6B5F54] mt-8 flex items-center justify-center gap-2">
+        <Mail className="w-3.5 h-3.5" />
+        {emailDemo ? (
+          <span>Confirmation email logged (add RESEND_API_KEY to send real emails)</span>
+        ) : emailSent ? (
+          <span>A confirmation email has been sent to {order.email}</span>
+        ) : (
+          <span>We could not send the confirmation email — your order is still confirmed</span>
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <Loader2 className="w-10 h-10 text-[#6B2D3C] animate-spin" />
+        </div>
+      }
+    >
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }

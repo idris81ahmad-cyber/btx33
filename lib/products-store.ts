@@ -7,14 +7,15 @@ import {
   hasGitHubStorage,
   writeProductsToGitHub,
 } from "@/lib/products-github";
-import { hasDatabase } from "@/lib/db";
+import { getDb, hasDatabase } from "@/lib/db";
 import {
   getProductsFromDb,
-  seedProductsToDb,
   upsertProductInDb,
   deleteProductFromDb,
   updateStockInDb,
 } from "@/lib/db/products";
+import { seedProducts } from "@/lib/db/seed";
+import { getDefaultProducts } from "@/lib/products-defaults";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
@@ -46,16 +47,6 @@ function canWriteToFilesystem(): boolean {
 function ensureDir() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-function getDefaultProducts(): Product[] {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("./products");
-    return mod.products || mod.default || [];
-  } catch {
-    return [];
   }
 }
 
@@ -140,13 +131,17 @@ function isProductionBuild(): boolean {
   return process.env.NEXT_PHASE === "phase-production-build";
 }
 
+function timeoutPromise<T>(ms: number, message: string): Promise<T> {
+  return new Promise((_resolve, reject) => {
+    setTimeout(() => reject(new Error(message)), ms);
+  });
+}
+
 async function withTimeout<T>(promise: Promise<T>, fallback: T): Promise<T> {
   try {
     return await Promise.race([
       promise,
-      new Promise<T>((_, reject) =>
-        setTimeout(() => reject(new Error("product fetch timeout")), FETCH_TIMEOUT_MS),
-      ),
+      timeoutPromise<T>(FETCH_TIMEOUT_MS, "product fetch timeout"),
     ]);
   } catch {
     return fallback;
@@ -172,7 +167,7 @@ export async function getProducts(): Promise<Product[]> {
     const legacy = await withTimeout(getProductsLegacy(), getDefaultProducts());
     if (legacy.length > 0) {
       try {
-        const seededCount = await seedProductsToDb(legacy);
+        const seededCount = await seedProducts(false);
         if (seededCount > 0) {
           console.log(`Seeded ${seededCount} products into database`);
         }
@@ -187,7 +182,27 @@ export async function getProducts(): Promise<Product[]> {
   return withTimeout(getProductsLegacy(), getDefaultProducts());
 }
 
+async function saveProductsToDb(products: Product[]): Promise<boolean> {
+  const db = getDb();
+  if (!db) return false;
+
+  try {
+    for (const product of products) {
+      await upsertProductInDb(product);
+    }
+    return true;
+  } catch (e) {
+    console.error("saveProductsToDb failed:", e);
+    return false;
+  }
+}
+
 export async function saveProducts(products: Product[]): Promise<void> {
+  if (hasDatabase()) {
+    const saved = await saveProductsToDb(products);
+    if (saved) return;
+  }
+
   if (hasBlobStorage()) {
     await writeProductsToBlob(products);
     return;
@@ -204,7 +219,7 @@ export async function saveProducts(products: Product[]): Promise<void> {
   }
 
   throw new Error(
-    "Product storage is read-only on Vercel. Add BLOB_READ_WRITE_TOKEN (Vercel Blob) or GITHUB_TOKEN (repo write) in your Vercel project environment variables."
+    "Product storage is read-only on Vercel. Add POSTGRES_URL, BLOB_READ_WRITE_TOKEN, or GITHUB_TOKEN in environment variables."
   );
 }
 
@@ -286,19 +301,23 @@ export async function deleteProduct(id: number): Promise<boolean> {
 export async function resetToDefaults(): Promise<Product[]> {
   const defaults = getDefaultProducts();
   if (hasDatabase()) {
-    // Clear and re-seed DB
-    // Note: For production, consider a more careful migration strategy
+    await seedProducts(true);
+    const fromDb = await getProductsFromDb();
+    if (fromDb && fromDb.length > 0) return fromDb;
   }
   await saveProducts(defaults);
   return defaults;
 }
 
-/**
- * Force re-seed products from legacy sources into DB (useful from admin)
- */
+/** Force re-seed products from defaults into Postgres (admin action). */
 export async function forceSeedProductsToDb(): Promise<number> {
   if (!hasDatabase()) return 0;
   const legacy = await getProductsLegacy();
-  if (legacy.length === 0) return 0;
-  return await seedProductsToDb(legacy);
+  if (legacy.length > 0) {
+    for (const product of legacy) {
+      await upsertProductInDb(product);
+    }
+    return legacy.length;
+  }
+  return seedProducts(true);
 }

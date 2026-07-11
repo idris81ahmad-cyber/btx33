@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       success: true,
       order: result.order,
       alreadyExists: result.alreadyExists ?? false,
+      emailSent: result.emailSent ?? false,
+      emailDemo: result.emailDemo ?? false,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to verify payment";

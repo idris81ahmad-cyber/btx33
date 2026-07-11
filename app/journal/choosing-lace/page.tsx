@@ -3,7 +3,7 @@ import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "How to Choose the Right Lace",
-  description: "Swiss lace, cord lace, sequin lace — a buyer's guide from BIYORA SHOP, Kano.",
+  description: "Swiss lace, cord lace, sequin lace — a buyer\u2019s guide from BIYORA SHOP, Kano.",
   path: "/journal/choosing-lace",
 });
 

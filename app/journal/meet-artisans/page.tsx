@@ -8,10 +8,10 @@ export const metadata = createPageMetadata({
 });
 
 const artisans = [
-  { name: "Alhaji Musa", role: "Master trader, 30 years in Kwari", quote: "We don't sell cloth — we sell trust. Every buyer who returns is family." },
-  { name: "Hauwa I.", role: "Quality inspector", quote: "I check every roll under natural light. If the colour is off by even one shade, it doesn't leave our stall." },
+  { name: "Alhaji Musa", role: "Master trader, 30 years in Kwari", quote: "We don\u2019t sell cloth — we sell trust. Every buyer who returns is family." },
+  { name: "Hauwa I.", role: "Quality inspector", quote: "I check every roll under natural light. If the colour is off by even one shade, it doesn\u2019t leave our stall." },
   { name: "Yusuf B.", role: "Lace specialist", quote: "Swiss lace has a sound — crisp, like paper. You learn to hear quality." },
-  { name: "Amina K.", role: "Adire dyer, Kofar Mata", quote: "Indigo is patience. The fabric tells you when it's ready." },
+  { name: "Amina K.", role: "Adire dyer, Kofar Mata", quote: "Indigo is patience. The fabric tells you when it\u2019s ready." },
 ];
 
 export default function MeetArtisansPage() {

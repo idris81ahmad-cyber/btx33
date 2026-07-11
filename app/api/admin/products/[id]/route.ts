@@ -36,7 +36,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireAuth();

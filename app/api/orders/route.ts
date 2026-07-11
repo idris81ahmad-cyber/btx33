@@ -25,10 +25,13 @@ const orderSchema = z.object({
     }),
   ),
   shipping: z.object({
+    fullName: z.string().min(2).optional(),
+    phone: z.string().optional(),
     address: z.string(),
     city: z.string(),
     state: z.string(),
     postalCode: z.string().optional(),
+    country: z.string().optional(),
   }),
   subtotal: z.number(),
   shippingFee: z.number(),
@@ -45,10 +48,21 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id ? parseInt(session.user.id, 10) : undefined;
 
+    const shipping = {
+      fullName: body.shipping.fullName || body.fullName,
+      phone: body.shipping.phone || body.phone,
+      address: body.shipping.address,
+      city: body.shipping.city,
+      state: body.shipping.state,
+      postalCode: body.shipping.postalCode,
+      country: body.shipping.country || "Nigeria",
+    };
+
     let persisted = false;
     if (hasDatabase()) {
       const order = await createOrder({
         ...body,
+        shipping,
         userId: userId && !isNaN(userId) ? userId : undefined,
       });
       persisted = !!order;
@@ -66,6 +80,7 @@ export async function POST(req: NextRequest) {
       to: body.email,
       orderNumber: body.orderNumber,
       customerName: body.fullName,
+      shipping,
       items: body.items.map((i) => ({
         name: i.name,
         quantity: i.quantity,

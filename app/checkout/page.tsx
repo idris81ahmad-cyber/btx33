@@ -1,33 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCartStore } from "@/lib/cart-store";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Loader2, Lock } from "lucide-react";
+import { AlertCircle, Loader2, Lock } from "lucide-react";
+import { mapPaymentInitError, type CheckoutError } from "@/lib/checkout-errors";
 
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "address" | "city", string>>;
+type CheckoutPhase = "idle" | "validating" | "initializing" | "redirecting";
+
+const FIELD_ORDER: (keyof FieldErrors)[] = ["fullName", "email", "phone", "address", "city"];
 
 export default function CheckoutPage() {
   const { items, getTotalPrice } = useCartStore();
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const [loading, setLoading] = useState(false);
-  const [paymentError, setPaymentError] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+  const [phase, setPhase] = useState<CheckoutPhase>("idle");
+  const [paymentError, setPaymentError] = useState<CheckoutError | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formData, setFormData] = useState({
     fullName: "",
-    email: session?.user?.email || "",
+    email: "",
     phone: "",
     address: "",
     city: "",
     state: "Kano",
+    postalCode: "",
   });
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      setFormData((prev) => ({
+        ...prev,
+        email: prev.email || session.user.email || "",
+        fullName: prev.fullName || session.user.name || "",
+      }));
+    }
+  }, [session?.user?.email, session?.user?.name]);
 
   const subtotal = getTotalPrice();
   const shippingFee = 2500;
   const total = subtotal + shippingFee;
+  const outOfStockItems = items.filter((item) => item.inStock <= 0);
+  const isBusy = phase !== "idle";
+
+  const scrollToFirstError = (errors: FieldErrors) => {
+    const first = FIELD_ORDER.find((key) => errors[key]);
+    if (!first) return;
+    const el = formRef.current?.querySelector(`[name="${first}"]`);
+    if (el instanceof HTMLElement) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+    }
+  };
 
   const validateForm = (): boolean => {
     const errors: FieldErrors = {};
@@ -41,12 +74,15 @@ export default function CheckoutPage() {
     if (!formData.phone.trim()) {
       errors.phone = "Phone number is required";
     } else if (formData.phone.replace(/\D/g, "").length < 10) {
-      errors.phone = "Enter a valid phone number";
+      errors.phone = "Enter a valid Nigerian phone number (at least 10 digits)";
     }
-    if (!formData.address.trim()) errors.address = "Delivery address is required";
+    if (!formData.address.trim()) errors.address = "Street address is required";
     if (!formData.city.trim()) errors.city = "City is required";
 
     setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      scrollToFirstError(errors);
+    }
     return Object.keys(errors).length === 0;
   };
 
@@ -54,7 +90,7 @@ export default function CheckoutPage() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
-    setPaymentError("");
+    setPaymentError(null);
   };
 
   const handlePayWithPaystack = async () => {
@@ -63,13 +99,34 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (outOfStockItems.length > 0) {
+      const names = outOfStockItems.map((item) => item.name).join(", ");
+      setPaymentError({
+        code: "OUT_OF_STOCK",
+        title: "Out-of-stock items in cart",
+        message: `Remove these fabrics before checkout: ${names}`,
+        action: "Update your cart and return here to pay.",
+      });
+      toast.error("Remove out-of-stock items to continue");
+      return;
+    }
+
+    setPhase("validating");
     if (!validateForm()) {
+      setPhase("idle");
+      setPaymentError({
+        code: "VALIDATION",
+        title: "Shipping details incomplete",
+        message: "Please fill in all required fields marked with *.",
+        action: "Correct the highlighted fields and try again.",
+      });
       toast.error("Please fix the highlighted fields");
       return;
     }
 
-    setLoading(true);
-    setPaymentError("");
+    setPhase("initializing");
+    setPaymentError(null);
+    let keepLoading = false;
 
     try {
       const cartItems = items.map((item) => ({
@@ -85,9 +142,13 @@ export default function CheckoutPage() {
       }));
 
       const shipping = {
+        fullName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
         address: formData.address.trim(),
         city: formData.city.trim(),
         state: formData.state,
+        postalCode: formData.postalCode.trim() || undefined,
+        country: "Nigeria",
       };
 
       const res = await fetch("/api/paystack/initialize", {
@@ -97,8 +158,8 @@ export default function CheckoutPage() {
           email: formData.email.trim(),
           amount: total,
           metadata: {
-            fullName: formData.fullName.trim(),
-            phone: formData.phone.trim(),
+            fullName: shipping.fullName,
+            phone: shipping.phone,
             shipping,
             cartItems,
             shippingFee,
@@ -109,45 +170,65 @@ export default function CheckoutPage() {
         }),
       });
 
-      const data = (await res.json()) as {
-        success?: boolean;
-        authorizationUrl?: string;
-        error?: string;
-      };
+      let data: { success?: boolean; authorizationUrl?: string; error?: string };
+      try {
+        data = (await res.json()) as typeof data;
+      } catch {
+        throw new Error("Invalid response from payment server");
+      }
 
       if (!res.ok) {
-        const message =
-          data.error ||
-          (res.status === 503
-            ? "Online payments are temporarily unavailable. Please try again later or contact us."
-            : "Failed to initialize payment");
-        setPaymentError(message);
-        toast.error(message);
+        const mapped = mapPaymentInitError(res.status, data.error);
+        setPaymentError(mapped);
+        toast.error(mapped.title);
         return;
       }
 
       if (data.success && data.authorizationUrl) {
+        keepLoading = true;
+        setPhase("redirecting");
         toast.success("Redirecting to secure payment…");
         window.location.href = data.authorizationUrl;
         return;
       }
 
-      const message = data.error || "Failed to initialize payment";
-      setPaymentError(message);
-      toast.error(message);
-    } catch {
-      const message = "Network error. Check your connection and try again.";
-      setPaymentError(message);
-      toast.error(message);
+      const mapped = mapPaymentInitError(500, data.error);
+      setPaymentError(mapped);
+      toast.error(mapped.title);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Network error. Check your connection and try again.";
+      setPaymentError({
+        code: "NETWORK",
+        title: "Connection problem",
+        message,
+        action: "Check your internet connection and try again.",
+      });
+      toast.error("Connection problem — please try again");
     } finally {
-      setLoading(false);
+      if (!keepLoading) {
+        setPhase("idle");
+      }
     }
   };
+
+  if (!hydrated || sessionStatus === "loading") {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-[#6B2D3C] animate-spin mx-auto mb-3" />
+          <p className="text-[#6B5F54] font-medium">Preparing checkout…</p>
+          <p className="text-xs text-[#6B5F54] mt-1">Loading your cart and account details</p>
+        </div>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto px-6 py-20 text-center">
         <h1 className="text-2xl font-semibold mb-4">Your cart is empty</h1>
+        <p className="text-[#6B5F54] mb-6">Add fabrics to your cart before proceeding to checkout.</p>
         <Link href="/shop" className="btn-primary inline-block px-8 py-3">
           Browse Fabrics
         </Link>
@@ -156,15 +237,50 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
-      <h1 className="text-4xl font-semibold tracking-tight mb-8">Checkout</h1>
+    <div className="max-w-5xl mx-auto px-6 py-12 relative">
+      {phase === "redirecting" && (
+        <div className="fixed inset-0 z-50 bg-[#2C2522]/70 flex items-center justify-center p-6">
+          <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-xl">
+            <Loader2 className="w-12 h-12 text-[#6B2D3C] animate-spin mx-auto mb-4" />
+            <p className="font-semibold text-lg">Redirecting to Paystack</p>
+            <p className="text-sm text-[#6B5F54] mt-2">
+              Please wait — do not close this tab while we open the secure payment page.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 mb-8">
+        <h1 className="text-4xl font-semibold tracking-tight">Checkout</h1>
+        {phase === "initializing" && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-[#6B5F54] bg-[#F8F4EC] px-3 py-1 rounded-full">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Starting payment…
+          </span>
+        )}
+      </div>
+
+      {outOfStockItems.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Some items are out of stock</p>
+            <p className="mt-1">
+              Remove {outOfStockItems.map((item) => item.name).join(", ")} from your cart to continue.
+            </p>
+            <Link href="/cart" className="inline-block mt-2 underline font-medium">
+              Go to cart
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3">
-          <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8">
+          <form ref={formRef} className="bg-white rounded-2xl border border-[#D4C9B8] p-8" onSubmit={(e) => e.preventDefault()}>
             <h2 className="text-xl font-semibold mb-6">Shipping Information</h2>
 
-            <fieldset disabled={loading} className="space-y-5 disabled:opacity-80">
+            <fieldset disabled={isBusy} className="space-y-5 disabled:opacity-80">
               <div>
                 <label className="block text-sm text-[#6B5F54] mb-1.5">Full Name *</label>
                 <input
@@ -214,14 +330,14 @@ export default function CheckoutPage() {
               </div>
 
               <div>
-                <label className="block text-sm text-[#6B5F54] mb-1.5">Delivery Address *</label>
+                <label className="block text-sm text-[#6B5F54] mb-1.5">Street Address *</label>
                 <input
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
                   className={`input-premium w-full ${fieldErrors.address ? "border-red-400" : ""}`}
-                  placeholder="15 Kantin Kwari Road"
+                  placeholder="15 Kantin Kwari Road, Building 4"
                   required
                 />
                 {fieldErrors.address && (
@@ -229,7 +345,7 @@ export default function CheckoutPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <label className="block text-sm text-[#6B5F54] mb-1.5">City *</label>
                   <input
@@ -246,7 +362,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm text-[#6B5F54] mb-1.5">State</label>
+                  <label className="block text-sm text-[#6B5F54] mb-1.5">State *</label>
                   <select
                     name="state"
                     value={formData.state}
@@ -257,25 +373,41 @@ export default function CheckoutPage() {
                     <option value="Lagos">Lagos</option>
                     <option value="Abuja">Abuja</option>
                     <option value="Kaduna">Kaduna</option>
+                    <option value="Rivers">Rivers</option>
+                    <option value="Oyo">Oyo</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm text-[#6B5F54] mb-1.5">Postal Code</label>
+                  <input
+                    type="text"
+                    name="postalCode"
+                    value={formData.postalCode}
+                    onChange={handleInputChange}
+                    className="input-premium w-full"
+                    placeholder="700001"
+                  />
+                </div>
               </div>
             </fieldset>
-          </div>
+          </form>
         </div>
 
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8 sticky top-6">
             <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
 
-            <div className="space-y-4 mb-6">
-              {items.map((item, index) => (
-                <div key={index} className="flex justify-between text-sm">
+            <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+              {items.map((item) => (
+                <div key={`${item.id}-${item.selectedLength}`} className="flex justify-between text-sm">
                   <div className="pr-4">
                     <div className="font-medium line-clamp-1">{item.name}</div>
                     <div className="text-[#6B5F54] text-xs">
                       {item.selectedLength || "5 yards"} × {item.quantity}
+                      {item.inStock <= 0 && (
+                        <span className="text-red-600 ml-1">(out of stock)</span>
+                      )}
                     </div>
                   </div>
                   <div className="font-medium whitespace-nowrap">
@@ -291,7 +423,7 @@ export default function CheckoutPage() {
                 <span>₦{subtotal.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6B5F54]">Shipping</span>
+                <span className="text-[#6B5F54]">Shipping (nationwide)</span>
                 <span>₦{shippingFee.toLocaleString()}</span>
               </div>
               <div className="flex justify-between pt-2 border-t border-[#EDE6D9] font-semibold text-base">
@@ -301,25 +433,45 @@ export default function CheckoutPage() {
             </div>
 
             {paymentError && (
-              <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
-                {paymentError}
+              <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
+                <div className="flex gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">{paymentError.title}</p>
+                    <p className="mt-1">{paymentError.message}</p>
+                    {paymentError.action && (
+                      <p className="mt-2 text-xs text-red-700/80">{paymentError.action}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
             <button
+              type="button"
               onClick={handlePayWithPaystack}
-              disabled={loading}
+              disabled={isBusy || outOfStockItems.length > 0}
               className="btn-primary w-full mt-6 py-4 text-lg disabled:opacity-70 flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {phase === "redirecting" ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Redirecting to Paystack…
+                  Opening Paystack…
+                </>
+              ) : phase === "initializing" ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Initializing payment…
+                </>
+              ) : phase === "validating" ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Checking details…
                 </>
               ) : (
                 <>
                   <Lock className="w-4 h-4" />
-                  Pay with Paystack
+                  Pay ₦{total.toLocaleString()} with Paystack
                 </>
               )}
             </button>

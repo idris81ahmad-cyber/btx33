@@ -16,6 +16,9 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed-db.ts",
+    "db:setup": "node scripts/db-setup.mjs",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
@@ -58,6 +61,7 @@
     "eslint-config-next": "^15.2.4",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

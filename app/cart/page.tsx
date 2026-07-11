@@ -6,6 +6,7 @@ import { useCartStore } from "@/lib/cart-store";
 import { Trash2, Plus, Minus, ArrowRight, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { useWishlistStore } from "@/lib/wishlist-store";
+import { cartItemToProduct } from "@/lib/cart-utils";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCartStore();
@@ -31,7 +32,7 @@ export default function CartPage() {
         <div>
           <div className="text-xs tracking-[3px] text-[#C5A46E]">YOUR SELECTIONS</div>
           <h1 className="text-5xl tracking-[-2px] font-semibold">Shopping Cart</h1>
-          <p className="text-[#6B5F54] mt-1">{items.length} item{items.length !== 1 ? 's' : ''} • {items.reduce((s, i) => s + i.quantity, 0)} total pieces</p>
+          <p className="text-[#6B5F54] mt-1">{items.length} item{items.length !== 1 ? "s" : ""} • {items.reduce((s, i) => s + i.quantity, 0)} total pieces</p>
         </div>
         <button 
           onClick={() => {
@@ -84,8 +85,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          const { quantity: _q, selectedLength: _l, currentPrice: _p, ...product } = item;
-                          addToWishlist(product);
+                          addToWishlist(cartItemToProduct(item));
                           removeFromCart(item.id, item.selectedLength);
                           toast.success("Saved for later");
                         }}

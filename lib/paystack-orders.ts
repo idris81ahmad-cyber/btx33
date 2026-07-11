@@ -3,13 +3,28 @@ import { hasDatabase } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email";
 import { getProducts, updateProductStock } from "@/lib/products-store";
 import type { PaystackTransactionData } from "@/lib/paystack-types";
-import type { OrderItemJson } from "@/lib/db/schema";
+import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 
 export interface FulfillPaystackResult {
   ok: boolean;
   order?: Awaited<ReturnType<typeof createOrder>>;
   alreadyExists?: boolean;
+  emailSent?: boolean;
+  emailDemo?: boolean;
   error?: string;
+}
+
+function buildShipping(metadata: PaystackTransactionData["metadata"]): ShippingJson {
+  const raw = metadata?.shipping;
+  return {
+    fullName: raw?.fullName || metadata?.fullName || "Customer",
+    phone: raw?.phone || metadata?.phone || "",
+    address: raw?.address || "",
+    city: raw?.city || "",
+    state: raw?.state || "",
+    postalCode: raw?.postalCode,
+    country: raw?.country || "Nigeria",
+  };
 }
 
 export async function fulfillPaystackPayment(
@@ -24,27 +39,28 @@ export async function fulfillPaystackPayment(
   const cartItems: OrderItemJson[] = metadata.cartItems ?? [];
 
   if (!hasDatabase()) {
-    return { ok: false, error: "Database not configured" };
+    return { ok: false, error: "Database not configured — orders cannot be saved" };
   }
 
   const existing = await getOrderByNumber(reference);
   if (existing) {
-    return { ok: true, order: existing, alreadyExists: true };
+    return { ok: true, order: existing, alreadyExists: true, emailSent: true };
   }
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const shippingFee = metadata.shippingFee ?? 0;
   const discount = metadata.discount ?? 0;
   const paidTotal = Math.round(paymentData.amount / 100);
+  const shipping = buildShipping(metadata);
 
   const order = await createOrder({
     orderNumber: reference,
     userId: metadata.userId ? parseInt(String(metadata.userId), 10) : undefined,
     email: paymentData.customer.email,
-    fullName: metadata.fullName || "Customer",
-    phone: metadata.phone || "",
+    fullName: metadata.fullName || shipping.fullName,
+    phone: metadata.phone || shipping.phone,
     items: cartItems,
-    shipping: metadata.shipping ?? { address: "", city: "", state: "" },
+    shipping,
     subtotal: subtotal || paidTotal - shippingFee + discount,
     shippingFee,
     discount,
@@ -54,7 +70,7 @@ export async function fulfillPaystackPayment(
   });
 
   if (!order) {
-    return { ok: false, error: "Failed to create order" };
+    return { ok: false, error: "Failed to create order in database" };
   }
 
   const products = await getProducts();
@@ -65,10 +81,11 @@ export async function fulfillPaystackPayment(
     }
   }
 
-  await sendOrderConfirmation({
+  const emailResult = await sendOrderConfirmation({
     to: order.email,
     orderNumber: order.orderNumber,
     customerName: order.fullName,
+    shipping: order.shipping,
     items: cartItems.map((i) => ({
       name: i.name,
       quantity: i.quantity,
@@ -81,5 +98,10 @@ export async function fulfillPaystackPayment(
     total: order.total,
   });
 
-  return { ok: true, order };
+  return {
+    ok: true,
+    order,
+    emailSent: emailResult.ok,
+    emailDemo: emailResult.demo,
+  };
 }

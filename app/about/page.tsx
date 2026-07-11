@@ -44,7 +44,7 @@ export default function AboutPage() {
           {[
             { icon: Shield, title: "Authenticity", desc: "Hand-inspected fabrics. Verified suppliers. No substitutes." },
             { icon: Heart, title: "Fairness", desc: "Pricing that respects makers and customers — wholesale and retail." },
-            { icon: Sparkles, title: "Celebration", desc: "Textiles for life's biggest moments — weddings, naming, graduations." },
+            { icon: Sparkles, title: "Celebration", desc: "Textiles for life\u2019s biggest moments — weddings, naming, graduations." },
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="bg-white p-8 rounded-3xl border border-[#D4C9B8]">
               <Icon className="w-6 h-6 text-[#C5A46E] mb-3" />

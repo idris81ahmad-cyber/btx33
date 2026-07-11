@@ -48,7 +48,7 @@ export default function WholesalePage() {
   };
 
   const whatsappMsg = encodeURIComponent(
-    "Hello BIYORA SHOP, I'm interested in wholesale fabrics from Kantin Kwari. Please share your bulk price list.",
+    "Hello BIYORA SHOP, I\u2019m interested in wholesale fabrics from Kantin Kwari. Please share your bulk price list.",
   );
 
   return (
