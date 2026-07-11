@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -48,6 +48,7 @@ const emptyForm: ProductForm = {
 export default function AdminDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,6 +242,22 @@ export default function AdminDashboard() {
       const message = err instanceof Error ? err.message : "Upload failed";
       toast.error(message);
     }
+  };
+
+  // Handle click on drop zone to open file browser
+  const handleDropZoneClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      if (file.type.startsWith("image/")) {
+        void uploadImageFile(file);
+      }
+    });
+    // Reset input so same file can be selected again
+    e.target.value = "";
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -626,29 +643,47 @@ export default function AdminDashboard() {
                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4} className="input-premium w-full rounded-3xl px-4 py-3 resize-y" />
               </div>
 
+              {/* Image Upload Section */}
               <div>
-                <label className="text-sm text-[#6B5F54] block mb-2">Images (add URLs or drop files)</label>
+                <label className="text-sm text-[#6B5F54] block mb-2">Images</label>
 
+                {/* Clickable + Drag & Drop Zone */}
                 <div
+                  onClick={handleDropZoneClick}
                   onDragEnter={handleDrag}
                   onDragOver={handleDrag}
                   onDragLeave={handleDrag}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-2xl p-6 text-center mb-3 transition ${dragActive ? "border-[#6B2D3C] bg-[#F8F4EC]" : "border-[#D4C9B8]"}`}
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center mb-3 transition cursor-pointer hover:border-[#6B2D3C] ${dragActive ? "border-[#6B2D3C] bg-[#F8F4EC]" : "border-[#D4C9B8]"}`}
                 >
-                  <p className="text-sm text-[#6B5F54]">Drag &amp; drop image files here or paste image URL below</p>
-                  <p className="text-[10px] text-[#6B5F54] mt-1">Files become data URLs (demo). Use Vercel Blob in production.</p>
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="text-4xl mb-1">📁</div>
+                    <p className="text-sm font-medium text-[#6B5F54]">Click to browse or drag &amp; drop images</p>
+                    <p className="text-[10px] text-[#6B5F54]">Supports JPG, PNG, WebP • Max 5MB per file</p>
+                  </div>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
                 </div>
 
                 <div className="flex gap-2 mb-3">
                   <input
                     value={newImageUrl}
                     onChange={(e) => setNewImageUrl(e.target.value)}
-                    placeholder="https://... or paste image URL"
+                    placeholder="Or paste image URL here"
                     className="input-premium flex-1 rounded-2xl px-4 py-3 text-sm"
                     onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImage(newImageUrl); } }}
                   />
-                  <button type="button" onClick={() => addImage(newImageUrl)} className="px-5 rounded-2xl border border-[#D4C9B8] text-sm">Add URL</button>
+                  <button type="button" onClick={() => addImage(newImageUrl)} className="px-5 rounded-2xl border border-[#D4C9B8] text-sm hover:bg-white active:bg-white">
+                    Add URL
+                  </button>
                 </div>
 
                 {form.images.length > 0 && (
@@ -656,7 +691,9 @@ export default function AdminDashboard() {
                     {form.images.map((img, idx) => (
                       <div key={idx} className="group relative border rounded-2xl overflow-hidden aspect-video bg-[#F8F4EC]">
                         <ProductImage src={img} alt={`Product preview ${idx + 1}`} fill sizes="200px" />
-                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded">×</button>
+                        <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-white/90 text-red-600 text-xs px-2 py-0.5 rounded hover:bg-red-50">
+                          ×
+                        </button>
                       </div>
                     ))}
                   </div>
