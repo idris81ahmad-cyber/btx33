@@ -2,11 +2,12 @@
  * Apply Drizzle migrations and seed admin users + default products.
  * Usage: node scripts/db-setup.mjs [--force-products]
  *
- * Requires POSTGRES_URL in environment (.env.local loaded via dotenv if present).
+ * Requires POSTGRES_URL or DATABASE_URL in environment (.env.local loaded if present).
  */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import pg from "pg";
 
 function loadEnvLocal() {
   const envPath = resolve(process.cwd(), ".env.local");
@@ -30,15 +31,53 @@ function loadEnvLocal() {
 
 loadEnvLocal();
 
-if (!process.env.POSTGRES_URL) {
-  console.error("POSTGRES_URL is required. Add it to .env.local or your shell environment.");
+const databaseUrl =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
+
+if (!databaseUrl) {
+  console.error(
+    "DATABASE_URL or POSTGRES_URL is required. Connect Neon via Vercel and run `vercel env pull .env.local`."
+  );
   process.exit(1);
+}
+
+if (!process.env.POSTGRES_URL && process.env.DATABASE_URL) {
+  process.env.POSTGRES_URL = process.env.DATABASE_URL;
 }
 
 const forceProducts = process.argv.includes("--force-products");
 
-console.log("→ Pushing schema to Postgres (drizzle-kit push)…");
-execSync("npx drizzle-kit push", { stdio: "inherit" });
+async function applySqlMigration() {
+  const migrationPath = resolve(process.cwd(), "drizzle/0000_initial_schema.sql");
+  if (!existsSync(migrationPath)) {
+    throw new Error(`Migration file not found: ${migrationPath}`);
+  }
+
+  const statements = readFileSync(migrationPath, "utf8")
+    .split(/--> statement-breakpoint/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const client = new pg.Client({
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: false },
+  });
+
+  await client.connect();
+  try {
+    for (const statement of statements) {
+      await client.query(statement);
+    }
+  } finally {
+    await client.end();
+  }
+}
+
+console.log("→ Applying schema to Postgres…");
+await applySqlMigration();
 
 console.log("→ Seeding database…");
 execSync(
