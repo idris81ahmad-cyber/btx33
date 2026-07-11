@@ -9,8 +9,7 @@ import type { Product } from "@/types/product";
 import { categories } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 import ProductManager from "@/components/admin/ProductManager";
-import { ORDER_STATUSES, orderStatusClass, orderStatusLabel } from "@/lib/order-status";
-import type { ShippingJson } from "@/lib/db/schema";
+import OrderManager from "@/components/admin/OrderManager";
 
 interface ProductForm {
   name: string;
@@ -63,19 +62,6 @@ export default function AdminDashboard() {
   const [storageReady, setStorageReady] = useState(true);
 
   const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
-  const [orders, setOrders] = useState<Array<{
-    orderNumber: string;
-    fullName: string;
-    email: string;
-    phone: string;
-    total: number;
-    status: string;
-    createdAt: string;
-    shipping?: ShippingJson;
-    items: { name: string; quantity: number }[];
-  }>>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -87,58 +73,6 @@ export default function AdminDashboard() {
       router.replace("/account");
     }
   }, [session, status, router]);
-
-  const loadOrders = async () => {
-    setOrdersLoading(true);
-    try {
-      const res = await fetch("/api/admin/orders", { credentials: "include" });
-      const data = await res.json();
-      setOrders(Array.isArray(data) ? data : data.orders ?? []);
-    } catch {
-      toast.error("Failed to load orders");
-    } finally {
-      setOrdersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === "orders" && session?.user?.role === "admin") {
-      loadOrders();
-    }
-  }, [activeTab, session]);
-
-  const updateOrderStatus = async (orderNumber: string, status: string) => {
-    setUpdatingOrderId(orderNumber);
-    try {
-      const res = await fetch("/api/admin/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ orderNumber, status }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setOrders((prev) =>
-          prev.map((o) => (o.orderNumber === orderNumber ? { ...o, status } : o)),
-        );
-        toast.success(`Order ${orderNumber} → ${orderStatusLabel(status)}`);
-      } else {
-        toast.error(data.error || "Failed to update order status");
-        loadOrders();
-      }
-    } catch {
-      toast.error("Network error updating order");
-      loadOrders();
-    } finally {
-      setUpdatingOrderId(null);
-    }
-  };
-
-  const formatShipping = (shipping?: ShippingJson) => {
-    if (!shipping) return "—";
-    const line = [shipping.address, shipping.city, shipping.state].filter(Boolean).join(", ");
-    return line || "—";
-  };
 
   const loadProducts = async () => {
     try {
@@ -439,7 +373,7 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab("orders")}
           className={`px-5 py-2 rounded-xl text-sm font-medium transition ${activeTab === "orders" ? "bg-[#6B2D3C] text-white" : "border border-[#D4C9B8] hover:bg-white/50"}`}
         >
-          Orders ({orders.length || "—"})
+          Orders
         </button>
       </div>
 
@@ -470,11 +404,6 @@ export default function AdminDashboard() {
               </button>
             </>
           )}
-          {activeTab === "orders" && (
-            <button onClick={loadOrders} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50">
-              Refresh
-            </button>
-          )}
           <button onClick={() => signOut({ callbackUrl: "/admin/login" })} className="px-5 py-2 text-sm bg-[#6B2D3C] text-white rounded-xl hover:bg-[#5a2532]">
             Sign Out
           </button>
@@ -482,79 +411,8 @@ export default function AdminDashboard() {
       </div>
 
       {activeTab === "orders" && (
-        <div className="bg-white border border-[#D4C9B8] rounded-3xl overflow-hidden mb-10">
-          <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-xl tracking-tight">Recent Orders</h2>
-          </div>
-          {ordersLoading ? (
-            <div className="p-12 text-center text-[#6B5F54]">Loading orders...</div>
-          ) : orders.length === 0 ? (
-            <div className="p-12 text-center text-[#6B5F54]">
-              No orders yet. Connect Vercel Postgres to persist orders, or place a test order on the live site.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-[#F8F4EC] text-[#6B5F54]">
-                  <tr>
-                    <th className="text-left px-6 py-3">Order</th>
-                    <th className="text-left px-6 py-3">Customer</th>
-                    <th className="text-left px-6 py-3">Ship to</th>
-                    <th className="text-right px-6 py-3">Total</th>
-                    <th className="text-left px-6 py-3">Status</th>
-                    <th className="text-left px-6 py-3">Date</th>
-                    <th className="text-center px-6 py-3">Update</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#EDE6D9]">
-                  {orders.map((o) => (
-                    <tr key={o.orderNumber} className="hover:bg-[#F8F4EC]/60">
-                      <td className="px-6 py-4 font-mono text-xs font-medium max-w-[140px] truncate" title={o.orderNumber}>
-                        {o.orderNumber}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium">{o.fullName}</div>
-                        <div className="text-xs text-[#6B5F54]">{o.email}</div>
-                        {o.phone && <div className="text-xs text-[#6B5F54]">{o.phone}</div>}
-                      </td>
-                      <td className="px-6 py-4 text-xs text-[#6B5F54] max-w-[200px]">
-                        <div className="line-clamp-2" title={formatShipping(o.shipping)}>
-                          {formatShipping(o.shipping)}
-                        </div>
-                        {o.shipping?.postalCode && (
-                          <div className="text-[10px] mt-0.5">{o.shipping.postalCode}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono">₦{o.total?.toLocaleString()}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border capitalize ${orderStatusClass(o.status)}`}>
-                          {orderStatusLabel(o.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-[#6B5F54] whitespace-nowrap">
-                        {new Date(o.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <select
-                          value={o.status}
-                          disabled={updatingOrderId === o.orderNumber}
-                          onChange={(e) => updateOrderStatus(o.orderNumber, e.target.value)}
-                          className="input-premium text-xs rounded-xl px-2 py-1 disabled:opacity-60"
-                        >
-                          {ORDER_STATUSES.map((s) => (
-                            <option key={s} value={s}>{orderStatusLabel(s)}</option>
-                          ))}
-                        </select>
-                        {updatingOrderId === o.orderNumber && (
-                          <div className="text-[10px] text-[#6B5F54] mt-1">Saving…</div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        <div className="mb-10">
+          <OrderManager />
         </div>
       )}
 

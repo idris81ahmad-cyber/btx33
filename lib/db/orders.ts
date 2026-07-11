@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { OrderItemJson, ShippingJson } from "./schema";
 
@@ -149,5 +149,24 @@ export async function updateOrderStatus(orderNumber: string, status: typeof sche
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Bulk status update for admin multi-select. Returns count of attempted updates. */
+export async function updateOrdersStatus(
+  orderNumbers: string[],
+  status: typeof schema.orderStatusEnum.enumValues[number],
+) {
+  const db = getDb();
+  if (!db || orderNumbers.length === 0) return 0;
+  try {
+    await db
+      .update(schema.orders)
+      .set({ status })
+      .where(inArray(schema.orders.orderNumber, orderNumbers));
+    return orderNumbers.length;
+  } catch (e) {
+    console.error("updateOrdersStatus failed:", e);
+    return 0;
   }
 }
