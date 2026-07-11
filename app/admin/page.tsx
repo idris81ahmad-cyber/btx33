@@ -588,13 +588,14 @@ export default function AdminDashboard() {
               embedded
               initialProducts={products}
               onCreateNew={openAdd}
-              onEditProduct={openEdit}
+              onFullEdit={openEdit}
               onMutate={loadProducts}
             />
           )}
 
           <div className="mt-4 text-xs text-[#6B5F54]">
-            Use &quot;Full edit&quot; or &quot;Add Fabric&quot; for images, specs, and length options.
+            <strong>Quick edit</strong> updates price/stock/category in place.{" "}
+            <strong>Full edit</strong> / <strong>Add Fabric</strong> open the rich modal for images, specs, and length options.
           </div>
         </>
       )}

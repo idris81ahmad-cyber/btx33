@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { fabricCategories, categoryShopHref } from "@/lib/products";
 
 export default function Footer() {
@@ -8,10 +9,12 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-5">
           <div className="flex items-center gap-3 mb-4">
-            <img 
-              src="/biyora-logo.png" 
-              alt="BIYORA SHOP" 
-              className="w-9 h-9 rounded-full object-cover ring-1 ring-[#C5A46E]/30" 
+            <Image
+              src="/biyora-logo.png"
+              alt="BIYORA SHOP"
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-full object-cover ring-1 ring-[#C5A46E]/30"
             />
             <span className="font-semibold text-xl tracking-[-0.8px] text-white">BIYORA SHOP</span>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingCart, Menu, X, Search, User } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
@@ -40,10 +41,13 @@ export default function Navbar() {
     <nav className="navbar sticky top-0 z-50 border-b border-[#D4C9B8]">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">
-          <img 
-            src="/biyora-logo.png" 
-            alt="BIYORA SHOP" 
-            className="w-9 h-9 rounded-full object-cover ring-1 ring-[#D4C9B8]" 
+          <Image
+            src="/biyora-logo.png"
+            alt="BIYORA SHOP"
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full object-cover ring-1 ring-[#D4C9B8]"
+            priority
           />
           <div>
             <div className="font-semibold text-xl tracking-[-0.8px] text-[#2C2522]">BIYORA SHOP</div>

@@ -6,7 +6,14 @@ import { toast } from 'sonner';
 
 interface ProductManagerProps {
   initialProducts: Product[];
+  /** Opens the rich admin create modal (images, specs, descriptions). */
   onCreateNew?: () => void;
+  /**
+   * Opens the rich full-edit modal on the parent dashboard.
+   * Quick edits (price/stock/category) always stay in ProductManager.
+   */
+  onFullEdit?: (product: Product) => void;
+  /** @deprecated Use onFullEdit — kept for backward compatibility */
   onEditProduct?: (product: Product) => void;
   onMutate?: () => void;
   /** Hides the standalone page header when embedded in the admin dashboard */
@@ -43,10 +50,12 @@ type SortConfig = {
 export default function ProductManager({
   initialProducts,
   onCreateNew,
+  onFullEdit,
   onEditProduct,
   onMutate,
   embedded = false,
 }: ProductManagerProps) {
+  const openFullEdit = onFullEdit ?? onEditProduct;
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -247,10 +256,11 @@ export default function ProductManager({
       setProducts(updatedProducts);
 
       const updatePromises = selectedIds.map(id =>
-        fetch('/api/admin/products/stock', {
+        fetch(`/api/admin/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, inStock: newStock }),
+          credentials: 'include',
+          body: JSON.stringify({ inStock: newStock }),
         })
       );
 
@@ -290,6 +300,7 @@ export default function ProductManager({
         fetch(`/api/admin/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ category: bulkNewCategory }),
         })
       );
@@ -347,6 +358,7 @@ export default function ProductManager({
         return fetch(`/api/admin/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ price: product.price }),
         });
       });
@@ -400,6 +412,7 @@ export default function ProductManager({
         return fetch(`/api/admin/products/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ salePrice: product.salePrice }),
         });
       });
@@ -434,7 +447,7 @@ export default function ProductManager({
           setProducts(remainingProducts);
 
           const deletePromises = selectedIds.map(id =>
-            fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+            fetch(`/api/admin/products/${id}`, { method: 'DELETE', credentials: 'include' })
           );
 
           await Promise.allSettled(deletePromises);
@@ -458,11 +471,8 @@ export default function ProductManager({
     return { label: 'Good', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
   };
 
-  const startEdit = (product: Product) => {
-    if (onEditProduct) {
-      onEditProduct(product);
-      return;
-    }
+  /** Always opens ProductManager quick edit (price / stock / category). */
+  const startQuickEdit = (product: Product) => {
     setEditingProduct(product);
     setEditForm({
       name: product.name,
@@ -494,6 +504,7 @@ export default function ProductManager({
       const res = await fetch(`/api/admin/products/${editingProduct.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(editForm),
       });
 
@@ -523,7 +534,10 @@ export default function ProductManager({
         setDeletingId(id);
 
         try {
-          const res = await fetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+          const res = await fetch(`/api/admin/products/${id}`, {
+            method: 'DELETE',
+            credentials: 'include',
+          });
           if (!res.ok) throw new Error('Failed to delete');
 
           setProducts(products.filter(p => p.id !== id));
@@ -542,10 +556,11 @@ export default function ProductManager({
   // Quick stock update (single)
   const updateStock = async (id: number, newStock: number) => {
     try {
-      const res = await fetch('/api/admin/products/stock', {
+      const res = await fetch(`/api/admin/products/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, inStock: newStock }),
+        credentials: 'include',
+        body: JSON.stringify({ inStock: newStock }),
       });
 
       if (!res.ok) throw new Error('Failed to update stock');
@@ -554,6 +569,7 @@ export default function ProductManager({
         p.id === id ? { ...p, inStock: newStock } : p
       ));
       toast.success('Stock updated');
+      onMutate?.();
     } catch {
       toast.error('Failed to update stock');
     }
@@ -785,7 +801,7 @@ export default function ProductManager({
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-[#6B5F54] text-sm">
                     {products.length === 0
-                      ? 'No products found. Tap "Create" to add your first fabric.'
+                      ? 'No products found. Tap Create to add your first fabric.'
                       : 'No products match your current filters.'}
                   </td>
                 </tr>
@@ -832,14 +848,25 @@ export default function ProductManager({
                       </div>
                     </td>
                     <td className="p-3 md:p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         <button
-                          onClick={() => startEdit(product)}
+                          type="button"
+                          onClick={() => startQuickEdit(product)}
                           className="px-2.5 py-1 text-xs border border-[#D4C9B8] rounded-lg hover:bg-white active:bg-white transition-colors"
                         >
-                          {onEditProduct ? "Full edit" : "Edit"}
+                          Quick edit
                         </button>
+                        {openFullEdit && (
+                          <button
+                            type="button"
+                            onClick={() => openFullEdit(product)}
+                            className="px-2.5 py-1 text-xs border border-[#6B2D3C]/30 text-[#6B2D3C] rounded-lg hover:bg-[#F8F4EC] active:bg-[#F1EDE4] transition-colors"
+                          >
+                            Full edit
+                          </button>
+                        )}
                         <button
+                          type="button"
                           onClick={() => handleDelete(product.id, product.name)}
                           disabled={deletingId === product.id}
                           className="px-2.5 py-1 text-xs border border-red-200 text-red-600 rounded-lg hover:bg-red-50 active:bg-red-50 disabled:opacity-50 transition-colors"
@@ -1057,10 +1084,13 @@ export default function ProductManager({
         </div>
       )}
 
-      {!onEditProduct && editingProduct && editForm && (
+      {editingProduct && editForm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h3 className="text-xl font-semibold mb-4">Edit Product</h3>
+            <h3 className="text-xl font-semibold mb-1">Quick edit</h3>
+            <p className="text-xs text-[#6B5F54] mb-4">
+              Name, price, stock &amp; category. Use Full edit for images and specs.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-[#6B5F54] block mb-1.5">Product Name</label>
@@ -1129,7 +1159,9 @@ export default function ProductManager({
               <button onClick={closeCreate} className="flex-1 py-3 border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] transition-colors active:bg-[#F1EDE4]">Cancel</button>
               <button onClick={handleCreate} disabled={loading} className="flex-1 py-3 btn-primary">{loading ? 'Creating...' : 'Create Product'}</button>
             </div>
-            <p className="text-xs text-[#6B5F54] mt-4 text-center">For full options (images, specs), use the rich "Add Fabric" button in the header.</p>
+            <p className="text-xs text-[#6B5F54] mt-4 text-center">
+              For full options (images, specs), use the rich &quot;Add Fabric&quot; button in the header.
+            </p>
           </div>
         </div>
       )}

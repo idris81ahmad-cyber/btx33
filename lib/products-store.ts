@@ -132,7 +132,7 @@ function isProductionBuild(): boolean {
 }
 
 function timeoutPromise<T>(ms: number, message: string): Promise<T> {
-  return new Promise((_resolve, reject) => {
+  return new Promise((_, reject) => {
     setTimeout(() => reject(new Error(message)), ms);
   });
 }
