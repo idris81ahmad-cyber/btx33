@@ -30,6 +30,7 @@ function CheckoutSuccessContent() {
   const [error, setError] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [emailDemo, setEmailDemo] = useState(false);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
 
   const verifyPayment = useCallback(async () => {
     if (!reference) {
@@ -55,6 +56,7 @@ function CheckoutSuccessContent() {
         error?: string;
         emailSent?: boolean;
         emailDemo?: boolean;
+        alreadyExists?: boolean;
       };
 
       try {
@@ -69,11 +71,19 @@ function CheckoutSuccessContent() {
         return;
       }
 
-      if (data.success && data.order) {
-        setOrder(data.order);
-        setEmailSent(Boolean(data.emailSent));
-        setEmailDemo(Boolean(data.emailDemo));
+      // Payment was successful on Paystack side
+      if (data.success) {
+        setPaymentConfirmed(true);
         clearCart();
+
+        if (data.order) {
+          setOrder(data.order);
+          setEmailSent(Boolean(data.emailSent));
+          setEmailDemo(Boolean(data.emailDemo));
+        } else {
+          // Order might not have been saved (e.g. DB issue), but payment succeeded
+          setError("Payment confirmed by Paystack, but we could not save the order details. Please contact support with your reference.");
+        }
       } else {
         const mapped = mapVerifyError(400, data.message || data.error);
         setError(`${mapped.title}: ${mapped.message}`);
@@ -105,15 +115,92 @@ function CheckoutSuccessContent() {
     );
   }
 
+  // Show success even if order details couldn't be saved
+  if (paymentConfirmed && order) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 py-16">
+        <div className="text-center mb-10">
+          <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+          <h1 className="text-4xl font-semibold tracking-tight mb-2">Payment Successful!</h1>
+          <p className="text-[#6B5F54]">Thank you for your order. We&apos;ve received your payment.</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8 mb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <div className="text-sm text-[#6B5F54]">Order Number</div>
+              <div className="font-mono text-lg font-medium">{order.orderNumber}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-[#6B5F54]">Total Paid</div>
+              <div className="text-2xl font-semibold">₦{order.total.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className="border-t border-[#EDE6D9] pt-6 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[#6B5F54]">Email</span>
+              <span>{order.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#6B5F54]">Status</span>
+              <span className="capitalize text-emerald-600 font-medium">{order.status}</span>
+            </div>
+            {order.shipping && (
+              <div className="pt-3 mt-3 border-t border-[#EDE6D9]">
+                <div className="text-[#6B5F54] mb-1">Delivery to</div>
+                <div className="text-[#2C2522] leading-relaxed">
+                  {order.shipping.fullName || order.fullName}<br />
+                  {order.shipping.address}<br />
+                  {order.shipping.city}, {order.shipping.state}
+                  {order.shipping.postalCode ? ` ${order.shipping.postalCode}` : ""}<br />
+                  {order.shipping.country ?? "Nigeria"}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/shop" className="btn-primary px-8 py-3 flex-1 sm:flex-none justify-center text-center">
+            Continue Shopping
+          </Link>
+          <Link
+            href="/account/orders"
+            className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center"
+          >
+            View My Orders
+          </Link>
+        </div>
+
+        <div className="text-center text-xs text-[#6B5F54] mt-8 flex items-center justify-center gap-2">
+          <Mail className="w-3.5 h-3.5" />
+          {emailDemo ? (
+            <span>Confirmation email logged (add RESEND_API_KEY to send real emails)</span>
+          ) : emailSent ? (
+            <span>A confirmation email has been sent to {order.email}</span>
+          ) : (
+            <span>We could not send the confirmation email — your order is still confirmed</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Error / Pending state
   if (error || !order) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center">
         <AlertCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-        <div className="text-[#2C2522] font-semibold text-xl mb-2">Payment verification pending</div>
+        <div className="text-[#2C2522] font-semibold text-xl mb-2">
+          {paymentConfirmed ? "Payment Confirmed" : "Payment Verification"}
+        </div>
         <p className="text-[#6B5F54] mb-6">{error || "We could not confirm your payment."}</p>
+
         {reference && (
           <p className="text-xs font-mono text-[#6B5F54] mb-6">Reference: {reference}</p>
         )}
+
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
             onClick={verifyPayment}
@@ -129,85 +216,22 @@ function CheckoutSuccessContent() {
               <>
                 <RefreshCw className="w-4 h-4" />
                 Retry verification
-              </>
-            )}
-          </button>
+              </button>
           <Link href="/contact" className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white">
             Contact support
           </Link>
         </div>
+
+        {paymentConfirmed && (
+          <p className="text-xs text-[#6B5F54] mt-6 max-w-xs mx-auto">
+            Your payment was successful. If this issue persists, please contact support with the reference above.
+          </p>
+        )}
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto px-6 py-16">
-      <div className="text-center mb-10">
-        <CheckCircle className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
-        <h1 className="text-4xl font-semibold tracking-tight mb-2">Payment Successful!</h1>
-        <p className="text-[#6B5F54]">Thank you for your order. We&apos;ve received your payment.</p>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-[#D4C9B8] p-8 mb-8">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <div className="text-sm text-[#6B5F54]">Order Number</div>
-            <div className="font-mono text-lg font-medium">{order.orderNumber}</div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-[#6B5F54]">Total Paid</div>
-            <div className="text-2xl font-semibold">₦{order.total.toLocaleString()}</div>
-          </div>
-        </div>
-
-        <div className="border-t border-[#EDE6D9] pt-6 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-[#6B5F54]">Email</span>
-            <span>{order.email}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#6B5F54]">Status</span>
-            <span className="capitalize text-emerald-600 font-medium">{order.status}</span>
-          </div>
-          {order.shipping && (
-            <div className="pt-3 mt-3 border-t border-[#EDE6D9]">
-              <div className="text-[#6B5F54] mb-1">Delivery to</div>
-              <div className="text-[#2C2522] leading-relaxed">
-                {order.shipping.fullName || order.fullName}<br />
-                {order.shipping.address}<br />
-                {order.shipping.city}, {order.shipping.state}
-                {order.shipping.postalCode ? ` ${order.shipping.postalCode}` : ""}<br />
-                {order.shipping.country ?? "Nigeria"}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link href="/shop" className="btn-primary px-8 py-3 flex-1 sm:flex-none justify-center text-center">
-          Continue Shopping
-        </Link>
-        <Link
-          href="/account/orders"
-          className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center"
-        >
-          View My Orders
-        </Link>
-      </div>
-
-      <div className="text-center text-xs text-[#6B5F54] mt-8 flex items-center justify-center gap-2">
-        <Mail className="w-3.5 h-3.5" />
-        {emailDemo ? (
-          <span>Confirmation email logged (add RESEND_API_KEY to send real emails)</span>
-        ) : emailSent ? (
-          <span>A confirmation email has been sent to {order.email}</span>
-        ) : (
-          <span>We could not send the confirmation email — your order is still confirmed</span>
-        )}
-      </div>
-    </div>
-  );
+  return null;
 }
 
 export default function CheckoutSuccessPage() {
