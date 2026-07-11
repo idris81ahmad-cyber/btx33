@@ -67,19 +67,29 @@ export async function initializePaystackPayment(
 
 export async function verifyPaystackPayment(reference: string): Promise<PaystackVerifyResponse> {
   const secretKey = getPaystackSecret();
+  const encoded = encodeURIComponent(reference);
 
-  const response = await fetch(`${PAYSTACK_BASE}/transaction/verify/${reference}`, {
+  const response = await fetch(`${PAYSTACK_BASE}/transaction/verify/${encoded}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${secretKey}`,
     },
   });
 
+  const payload = (await response.json().catch(() => null)) as
+    | PaystackVerifyResponse
+    | { message?: string; status?: boolean }
+    | null;
+
   if (!response.ok) {
-    throw new Error("Failed to verify Paystack payment");
+    const detail =
+      payload && typeof payload === "object" && "message" in payload
+        ? payload.message
+        : undefined;
+    throw new Error(detail || `Failed to verify Paystack payment (HTTP ${response.status})`);
   }
 
-  return response.json() as Promise<PaystackVerifyResponse>;
+  return payload as PaystackVerifyResponse;
 }
 
 /**

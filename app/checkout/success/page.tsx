@@ -63,6 +63,7 @@ function CheckoutSuccessContent() {
           emailSent?: boolean;
           emailDemo?: boolean;
           alreadyExists?: boolean;
+          partial?: boolean;
         };
 
         try {
@@ -84,14 +85,25 @@ function CheckoutSuccessContent() {
           setError("");
 
           if (data.order) {
-            setOrder(data.order);
+            setOrder({
+              ...data.order,
+              // Ensure orderNumber always present for display
+              orderNumber: data.order.orderNumber || reference || "—",
+            });
             setEmailSent(Boolean(data.emailSent));
             setEmailDemo(Boolean(data.emailDemo));
-          } else {
-            // Order might not have been saved (e.g. DB issue), but payment succeeded
-            setError(
-              "Payment confirmed by Paystack, but we could not save the order details. Please contact support with your reference.",
-            );
+          } else if (reference) {
+            // Minimal success card when API confirms payment without full order row
+            setOrder({
+              id: 0,
+              orderNumber: reference,
+              email: "",
+              fullName: "Customer",
+              total: 0,
+              status: "confirmed",
+              createdAt: new Date().toISOString(),
+              items: [],
+            });
           }
         } else {
           const mapped = mapVerifyError(400, data.message || data.error);

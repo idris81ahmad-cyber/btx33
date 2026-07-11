@@ -76,10 +76,12 @@ export async function POST(request: NextRequest) {
     }
 
     const reference = `BIYORA-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    const siteUrl =
+    // Prefer stable production domain so Paystack never redirects to a stale deployment URL
+    const siteUrl = (
       process.env.NEXT_PUBLIC_SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
-      "https://biyora-shop.vercel.app";
+      process.env.NEXTAUTH_URL ||
+      "https://biyora-shop.vercel.app"
+    ).replace(/\/$/, "");
 
     const shippingFee = Number(metadata.shippingFee) || 0;
     const discount = Number(metadata.discount) || 0;
