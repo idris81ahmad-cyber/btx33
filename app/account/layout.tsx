@@ -2,7 +2,8 @@ import { createPageMetadata } from "@/lib/metadata";
 
 export const metadata = createPageMetadata({
   title: "My Account",
-  description: "Manage your BIYORA SHOP account, addresses, and order history.",
+  description:
+    "Manage your BIYORA SHOP account, delivery addresses, and track order status.",
   path: "/account",
   noIndex: true,
 });

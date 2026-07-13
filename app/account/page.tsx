@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { orderStatusClass, orderStatusLabel } from "@/lib/order-status";
+import { Package } from "lucide-react";
 
 interface Order {
   orderNumber: string;
@@ -97,24 +99,65 @@ export default function AccountPage() {
 
       <div className="grid gap-8">
         <Card className="rounded-3xl border-[#D4C9B8]">
-          <CardHeader>
-            <CardTitle>Order history</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-[#C5A46E]" aria-hidden="true" />
+              Recent orders
+            </CardTitle>
+            <Link
+              href="/account/orders"
+              className="text-sm font-medium text-[#6B2D3C] underline underline-offset-2"
+            >
+              View all & track delivery
+            </Link>
           </CardHeader>
           <CardContent>
             {orders.length === 0 ? (
-              <p className="text-[#6B5F54] text-sm">No orders yet. <Link href="/shop" className="underline">Start shopping</Link></p>
+              <p className="text-[#6B5F54] text-sm">
+                No orders yet.{" "}
+                <Link href="/shop" className="underline">
+                  Start shopping
+                </Link>
+              </p>
             ) : (
-              <div className="space-y-4">
-                {orders.map((o) => (
-                  <div key={o.orderNumber} className="flex justify-between items-start p-4 bg-[#F8F4EC] rounded-2xl">
-                    <div>
-                      <div className="font-mono font-medium">{o.orderNumber}</div>
-                      <div className="text-xs text-[#6B5F54] capitalize">{o.status} • {new Date(o.createdAt).toLocaleDateString()}</div>
-                      <div className="text-xs mt-1">{o.items?.map((i) => i.name).join(", ")}</div>
+              <div className="space-y-3">
+                {orders.slice(0, 5).map((o) => (
+                  <Link
+                    key={o.orderNumber}
+                    href="/account/orders"
+                    className="flex justify-between items-start gap-3 p-4 bg-[#F8F4EC] rounded-2xl hover:bg-[#F1EDE4] transition"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-mono text-sm font-medium truncate">
+                        {o.orderNumber}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium border ${orderStatusClass(o.status)}`}
+                        >
+                          {orderStatusLabel(o.status)}
+                        </span>
+                        <span className="text-xs text-[#6B5F54]">
+                          {new Date(o.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="text-xs text-[#6B5F54] mt-1 line-clamp-1">
+                        {o.items?.map((i) => i.name).join(", ")}
+                      </div>
                     </div>
-                    <div className="font-mono font-semibold">₦{o.total?.toLocaleString()}</div>
-                  </div>
+                    <div className="font-semibold tabular-nums shrink-0">
+                      ₦{o.total?.toLocaleString()}
+                    </div>
+                  </Link>
                 ))}
+                {orders.length > 5 && (
+                  <p className="text-xs text-center text-[#6B5F54] pt-1">
+                    +{orders.length - 5} more —{" "}
+                    <Link href="/account/orders" className="underline">
+                      see full history
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
           </CardContent>

@@ -206,9 +206,9 @@ function CheckoutSuccessContent() {
           </Link>
           <Link
             href="/account/orders"
-            className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center"
+            className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center min-h-[44px] inline-flex items-center justify-center"
           >
-            View My Orders
+            Track delivery
           </Link>
         </div>
 
