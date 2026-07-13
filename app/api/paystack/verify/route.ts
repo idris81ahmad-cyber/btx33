@@ -3,6 +3,9 @@ import { verifyPaystackPayment } from "@/lib/paystack";
 import { fulfillPaystackPayment } from "@/lib/paystack-orders";
 import { getOrderByNumber } from "@/lib/db/orders";
 import { ensurePostgresEnv, hasDatabase } from "@/lib/db";
+import { validateEnvOnce } from "@/lib/env";
+import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 function serializeOrder(order: {
   createdAt?: Date | string | null;
@@ -19,8 +22,17 @@ function serializeOrder(order: {
 
 export async function POST(request: NextRequest) {
   try {
-    // Ensure Neon DATABASE_URL is mirrored into POSTGRES_URL for @vercel/postgres
+    validateEnvOnce();
     ensurePostgresEnv();
+
+    const ip = clientIp(request);
+    const rl = rateLimit(`paystack-verify:${ip}`, { limit: 30, windowMs: 60_000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please wait and retry." },
+        { status: 429, headers: rateLimitHeaders(rl) },
+      );
+    }
 
     const body = (await request.json()) as { reference?: string };
     const reference = body.reference?.trim();
@@ -85,11 +97,10 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      console.error("[Paystack Verify] Fulfill failed after successful payment:", result.error, {
+      logger.error("paystack-verify", "Fulfill failed after successful payment", {
         reference,
+        error: result.error,
         hasDatabase: hasDatabase(),
-        postgresUrlSet: Boolean(process.env.POSTGRES_URL),
-        databaseUrlSet: Boolean(process.env.DATABASE_URL),
       });
 
       // Customer-facing success with synthetic order so UI does not show an error
@@ -114,7 +125,10 @@ export async function POST(request: NextRequest) {
           "Payment confirmed. Order details will appear shortly — save your reference.",
       });
     } catch (fulfillError) {
-      console.error("[Paystack Verify] Fulfill threw after successful payment:", fulfillError);
+      logger.error("paystack-verify", "Fulfill threw after successful payment", {
+        reference,
+        error: fulfillError instanceof Error ? fulfillError.message : String(fulfillError),
+      });
       return NextResponse.json({
         success: true,
         order: {
@@ -137,10 +151,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to verify payment";
-    console.error("Paystack verify error:", error, {
+    logger.error("paystack-verify", message, {
       hasDatabase: hasDatabase(),
-      postgresUrlSet: Boolean(process.env.POSTGRES_URL),
-      databaseUrlSet: Boolean(process.env.DATABASE_URL),
     });
     return NextResponse.json({ error: message }, { status: 500 });
   }

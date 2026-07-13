@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { createUser, getUserByEmail } from "@/lib/db/users";
 import { hasDatabase } from "@/lib/db";
+import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 const signupSchema = z.object({
   name: z.string().min(2),
@@ -12,6 +13,15 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const ip = clientIp(req);
+  const rl = rateLimit(`signup:${ip}`, { limit: 8, windowMs: 15 * 60_000 });
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many signup attempts. Please try again later." },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   if (!hasDatabase()) {
     return NextResponse.json(
       { error: "Account registration requires database. Connect Vercel Postgres in your project settings." },

@@ -7,9 +7,23 @@ import { createOrder } from "@/lib/db/orders";
 import { hasDatabase } from "@/lib/db";
 import { parseUserId } from "@/lib/paystack-orders";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
+import { validateEnvOnce } from "@/lib/env";
+import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   try {
+    validateEnvOnce();
+
+    const ip = clientIp(request);
+    const rl = rateLimit(`paystack-init:${ip}`, { limit: 15, windowMs: 60_000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many payment attempts. Please wait a minute and try again." },
+        { status: 429, headers: rateLimitHeaders(rl) },
+      );
+    }
+
     if (!isPaystackConfigured()) {
       return NextResponse.json(
         {
@@ -142,7 +156,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to initialize payment";
-    console.error("Paystack initialize error:", error);
+    logger.error("paystack-init", message, {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

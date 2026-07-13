@@ -8,6 +8,7 @@ import { sendOrderConfirmation } from "@/lib/email";
 import { getProducts, updateProductStock } from "@/lib/products-store";
 import type { PaystackTransactionData } from "@/lib/paystack-types";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
+import { logger } from "@/lib/logger";
 
 export interface FulfillPaystackResult {
   ok: boolean;
@@ -149,7 +150,9 @@ async function deductStock(cartItems: OrderItemJson[]) {
       }
     }
   } catch (e) {
-    console.error("[paystack-orders] Stock update failed (order still valid):", e);
+    logger.error("paystack-orders", "Stock update failed (order still valid)", {
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
 }
 
