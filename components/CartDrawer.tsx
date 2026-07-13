@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, Heart } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2, ArrowRight, Heart, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sheet,
@@ -17,12 +17,20 @@ import { useUIStore } from "@/lib/ui-store";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { cartItemToProduct } from "@/lib/cart-utils";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 export default function CartDrawer() {
   const { cartDrawerOpen, setCartDrawerOpen } = useUIStore();
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCartStore();
   const { add: addToWishlist } = useWishlistStore();
+  const { data: session } = useSession();
   const total = getTotalPrice();
+  const ordersHref =
+    session?.user?.role === "admin"
+      ? "/admin"
+      : session
+        ? "/account/orders"
+        : "/login?callbackUrl=/account/orders";
 
   const saveForLater = (item: (typeof items)[0]) => {
     addToWishlist(cartItemToProduct(item));
@@ -55,9 +63,19 @@ export default function CartDrawer() {
               >
                 <div className="text-5xl mb-4">🛍️</div>
                 <p className="text-[#6B5F54] mb-6">Your cart is empty</p>
-                <Button asChild onClick={() => setCartDrawerOpen(false)}>
-                  <Link href="/shop">Browse fabrics</Link>
-                </Button>
+                <div className="flex flex-col gap-3 items-center">
+                  <Button asChild onClick={() => setCartDrawerOpen(false)}>
+                    <Link href="/shop">Browse fabrics</Link>
+                  </Button>
+                  <Link
+                    href={ordersHref}
+                    onClick={() => setCartDrawerOpen(false)}
+                    className="inline-flex items-center gap-1.5 text-sm text-[#6B2D3C] underline underline-offset-2"
+                  >
+                    <Package className="w-4 h-4" />
+                    Track my orders
+                  </Link>
+                </div>
               </motion.div>
             ) : (
               <div className="space-y-4">
@@ -152,6 +170,14 @@ export default function CartDrawer() {
                 View full cart
               </Link>
             </Button>
+            <Link
+              href={ordersHref}
+              onClick={() => setCartDrawerOpen(false)}
+              className="flex items-center justify-center gap-2 text-sm text-[#6B5F54] hover:text-[#6B2D3C] py-2 min-h-[44px]"
+            >
+              <Package className="w-4 h-4" />
+              Order history & delivery
+            </Link>
           </div>
         )}
       </SheetContent>

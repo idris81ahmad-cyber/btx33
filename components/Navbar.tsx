@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Menu, X, Search, User } from "lucide-react";
+import { ShoppingCart, Menu, X, Search, User, Package } from "lucide-react";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useCartStore } from "@/lib/cart-store";
@@ -22,6 +22,14 @@ export default function Navbar() {
       ? "/admin"
       : "/account"
     : "/login";
+
+  // Orders next to cart — login with return URL if guest
+  const ordersHref =
+    session?.user?.role === "admin"
+      ? "/admin"
+      : session
+        ? "/account/orders"
+        : "/login?callbackUrl=/account/orders";
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -95,6 +103,17 @@ export default function Navbar() {
             {session ? (session.user.role === "admin" ? "Admin" : "Account") : "Sign in"}
           </Link>
 
+          <Link
+            href={ordersHref}
+            className={`relative flex items-center justify-center p-2.5 rounded-full hover:bg-white/60 transition-all active:scale-95 group ${
+              pathname.startsWith("/account/orders") ? "bg-white/70 text-[#6B2D3C]" : ""
+            }`}
+            aria-label="Order history and delivery status"
+            title="My orders"
+          >
+            <Package className="w-5 h-5 text-[#2C2522] group-hover:scale-105 transition" />
+          </Link>
+
           <button
             type="button"
             onClick={() => setCartDrawerOpen(true)}
@@ -151,7 +170,15 @@ export default function Navbar() {
               <Link href="/faq" onClick={() => setIsMenuOpen(false)} className="text-[#6B5F54]">
                 FAQ
               </Link>
-              <div className="pt-4 border-t border-[#D4C9B8]">
+              <div className="pt-4 border-t border-[#D4C9B8] space-y-4">
+                <Link
+                  href={ordersHref}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-2 text-[#6B5F54]"
+                >
+                  <Package className="w-4 h-4" />
+                  My orders
+                </Link>
                 <Link
                   href={accountHref}
                   onClick={() => setIsMenuOpen(false)}
