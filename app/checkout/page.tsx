@@ -5,9 +5,10 @@ import { useCartStore } from "@/lib/cart-store";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { AlertCircle, Loader2, Lock } from "lucide-react";
+import { AlertCircle, Loader2, Lock, Tag } from "lucide-react";
 import { mapPaymentInitError, type CheckoutError } from "@/lib/checkout-errors";
 import ErrorBanner from "@/components/ErrorBanner";
+import { validateCoupon, type Coupon } from "@/lib/coupons";
 
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "address" | "city", string>>;
 type CheckoutPhase = "idle" | "validating" | "initializing" | "redirecting";
@@ -32,6 +33,10 @@ export default function CheckoutPage() {
     state: "Kano",
     postalCode: "",
   });
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState("");
 
   useEffect(() => {
     setHydrated(true);
@@ -49,9 +54,45 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice();
   const shippingFee = 2500;
-  const total = subtotal + shippingFee;
+
+  // Re-check coupon when cart total changes
+  useEffect(() => {
+    if (!appliedCoupon) return;
+    const result = validateCoupon(appliedCoupon.code, subtotal);
+    if (!result.valid) {
+      setAppliedCoupon(null);
+      setDiscount(0);
+      setCouponMessage(result.message);
+      return;
+    }
+    setDiscount(result.discount);
+  }, [subtotal, appliedCoupon]);
+
+  const total = Math.max(0, subtotal + shippingFee - discount);
   const outOfStockItems = items.filter((item) => item.inStock <= 0);
   const isBusy = phase !== "idle";
+
+  const applyCoupon = () => {
+    const result = validateCoupon(couponInput, subtotal);
+    if (!result.valid) {
+      setAppliedCoupon(null);
+      setDiscount(0);
+      setCouponMessage(result.message);
+      toast.error(result.message);
+      return;
+    }
+    setAppliedCoupon(result.coupon);
+    setDiscount(result.discount);
+    setCouponMessage(`${result.coupon.label} applied (−₦${result.discount.toLocaleString()})`);
+    toast.success("Coupon applied");
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setDiscount(0);
+    setCouponInput("");
+    setCouponMessage("");
+  };
 
   const scrollToFirstError = (errors: FieldErrors) => {
     const first = FIELD_ORDER.find((key) => errors[key]);
@@ -165,7 +206,8 @@ export default function CheckoutPage() {
             cartItems,
             shippingFee,
             subtotal,
-            discount: 0,
+            discount,
+            couponCode: appliedCoupon?.code || undefined,
             userId: session?.user?.id || null,
           },
         }),
@@ -418,7 +460,67 @@ export default function CheckoutPage() {
               ))}
             </div>
 
-            <div className="border-t border-[#EDE6D9] pt-4 space-y-2 text-sm">
+            <div className="border-t border-[#EDE6D9] pt-4 space-y-3 text-sm">
+              <div>
+                <label htmlFor="coupon" className="text-xs text-[#6B5F54] mb-1.5 flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5" aria-hidden="true" /> Coupon code
+                </label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                    <div className="min-w-0">
+                      <p className="font-mono font-medium text-emerald-900">{appliedCoupon.code}</p>
+                      <p className="text-xs text-emerald-800 truncate">{appliedCoupon.label}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      disabled={isBusy}
+                      className="text-xs underline text-emerald-900 shrink-0 min-h-[40px]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      id="coupon"
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value.toUpperCase());
+                        setCouponMessage("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          applyCoupon();
+                        }
+                      }}
+                      disabled={isBusy}
+                      placeholder="KWARI10"
+                      autoComplete="off"
+                      className="input-premium flex-1 rounded-xl px-3 py-2.5 text-sm min-h-[44px] uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={isBusy || !couponInput.trim()}
+                      className="px-4 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] disabled:opacity-50 min-h-[44px]"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                )}
+                {couponMessage && !appliedCoupon && (
+                  <p className="text-xs text-red-600 mt-1.5" role="status">
+                    {couponMessage}
+                  </p>
+                )}
+                <p className="text-[10px] text-[#6B5F54] mt-1.5">
+                  Try KWARI10, BIYORA5000, or FABRIC15 (min. order applies)
+                </p>
+              </div>
+
               <div className="flex justify-between">
                 <span className="text-[#6B5F54]">Subtotal</span>
                 <span>₦{subtotal.toLocaleString()}</span>
@@ -427,6 +529,12 @@ export default function CheckoutPage() {
                 <span className="text-[#6B5F54]">Shipping (nationwide)</span>
                 <span>₦{shippingFee.toLocaleString()}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-emerald-800">
+                  <span>Discount{appliedCoupon ? ` (${appliedCoupon.code})` : ""}</span>
+                  <span>−₦{discount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between pt-2 border-t border-[#EDE6D9] font-semibold text-base">
                 <span>Total</span>
                 <span>₦{total.toLocaleString()}</span>

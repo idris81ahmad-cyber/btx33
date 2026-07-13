@@ -19,7 +19,12 @@ export interface AdminOrder {
   status: string;
   createdAt: string;
   shipping?: ShippingJson;
-  items: { name: string; quantity: number; selectedLength?: string }[];
+  items: {
+    name: string;
+    quantity: number;
+    selectedLength?: string;
+    lineTotal?: number;
+  }[];
 }
 
 const PAGE_SIZE = 10;
@@ -224,6 +229,67 @@ export default function OrderManager() {
     );
   };
 
+  const exportCsv = () => {
+    const rows = filtered;
+    if (rows.length === 0) {
+      toast.error("No orders to export");
+      return;
+    }
+
+    const escape = (value: unknown) => {
+      const s = String(value ?? "");
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    };
+
+    const headers = [
+      "orderNumber",
+      "status",
+      "fullName",
+      "email",
+      "phone",
+      "total",
+      "city",
+      "state",
+      "address",
+      "items",
+      "createdAt",
+    ];
+
+    const lines = [
+      headers.join(","),
+      ...rows.map((o) =>
+        [
+          o.orderNumber,
+          o.status,
+          o.fullName,
+          o.email,
+          o.phone,
+          o.total,
+          o.shipping?.city ?? "",
+          o.shipping?.state ?? "",
+          o.shipping?.address ?? "",
+          (o.items || [])
+            .map((i) => `${i.name} x${i.quantity}${i.selectedLength ? ` (${i.selectedLength})` : ""}`)
+            .join("; "),
+          o.createdAt,
+        ]
+          .map(escape)
+          .join(","),
+      ),
+    ];
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `biyora-orders-${stamp}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} order(s)`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Status summary chips */}
@@ -276,6 +342,14 @@ export default function OrderManager() {
               aria-label="Search orders"
               className="input-premium rounded-xl px-3 py-2.5 text-sm w-full sm:w-72 min-h-[44px]"
             />
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={filtered.length === 0}
+              className="px-4 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] min-h-[44px] disabled:opacity-50"
+            >
+              Export CSV
+            </button>
             <button
               type="button"
               onClick={() => void loadOrders()}

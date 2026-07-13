@@ -12,8 +12,21 @@ const COUPONS: Coupon[] = [
   { code: "FABRIC15", label: "15% off premium fabrics", type: "percent", value: 15, minSubtotal: 75_000 },
 ];
 
-export function validateCoupon(code: string, subtotal: number): { valid: true; coupon: Coupon; discount: number } | { valid: false; message: string } {
+export function listPublicCoupons(): Pick<Coupon, "code" | "label" | "minSubtotal">[] {
+  return COUPONS.map(({ code, label, minSubtotal }) => ({ code, label, minSubtotal }));
+}
+
+export function validateCoupon(
+  code: string,
+  subtotal: number,
+):
+  | { valid: true; coupon: Coupon; discount: number }
+  | { valid: false; message: string } {
   const normalized = code.trim().toUpperCase();
+  if (!normalized) {
+    return { valid: false, message: "Enter a coupon code" };
+  }
+
   const coupon = COUPONS.find((c) => c.code === normalized);
 
   if (!coupon) {
@@ -22,7 +35,7 @@ export function validateCoupon(code: string, subtotal: number): { valid: true; c
   if (coupon.minSubtotal && subtotal < coupon.minSubtotal) {
     return {
       valid: false,
-      message: `Minimum order of ₦${coupon.minSubtotal.toLocaleString()} required`,
+      message: `Minimum order of ₦${coupon.minSubtotal.toLocaleString()} required for ${coupon.code}`,
     };
   }
 
@@ -31,5 +44,5 @@ export function validateCoupon(code: string, subtotal: number): { valid: true; c
       ? Math.round(subtotal * (coupon.value / 100))
       : Math.min(coupon.value, subtotal);
 
-  return { valid: true, coupon, discount };
+  return { valid: true, coupon, discount: Math.max(0, discount) };
 }

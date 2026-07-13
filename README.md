@@ -1,259 +1,201 @@
-# 🧵 BIYORA SHOP — Premium African Textiles
+# BIYORA SHOP — Premium African Textiles
 
 > **Kwari Market Quality, Delivered.**  
-> A modern, luxurious e-commerce experience showcasing the finest textiles from Kano’s iconic Kantin Kwari Market and premium African textile heritage.
+> Modern e-commerce for curated African textiles from Kano’s Kantin Kwari Market.
 
-**Live Demo:** [biyora-shop.vercel.app](https://biyora-shop.vercel.app)
-
----
-
-## ✨ Features
-
-### Core Shopping Experience
-- **Stunning Home Page** — Hero with powerful cultural positioning, featured fabrics, category highlights, trust signals, and newsletter signup
-- **Fully Functional Shop** — Real-time search, advanced filters (category, color family, pattern style, price range), sorting, beautiful responsive product grid with skeletons
-- **Premium Product Detail Pages** — High-quality image gallery, dynamic length selector with live price update, detailed specifications, “How to Style” suggestions, related products, reviews section
-- **Cart System** — Persistent cart with Zustand + localStorage (length variants supported), quantity management, live totals in ₦
-- **Elegant Checkout** — Nigerian states dropdown, comprehensive address form with Zod + React Hook Form validation, multiple payment options
-- **Beautiful Order Success** — Confetti celebration, order number, “Track Order” demo
-
-### Advanced & Operational Features
-- **Full Admin Dashboard** (`/admin`) — Product management (CRUD), order viewing, image uploads via Vercel Blob, admin login
-- **Authentication & Accounts** — NextAuth-powered login/signup, protected account pages, address & order history APIs
-- **Content & Education** — Journal with multiple articles (Choosing Lace, Fabric Care, Meet Artisans, Styling Tips)
-- **Wholesale Page** — Dedicated flow for bulk/custom orders
-- **Fabric Calculator** — Interactive tool for yardage/length calculations
-- **Reviews System** — API + UI for product reviews
-- **Contact Form** — Fully working with email delivery (Resend)
-- **FAQ & About** — Rich brand story connected to Kwari Market heritage
-
-### Technical Excellence
-- Next.js 15 (App Router) + TypeScript (strict mode)
-- Tailwind CSS 4 + beautiful custom premium design system (burgundy, gold, cream, forest tones)
-- Framer Motion for smooth animations and micro-interactions
-- Zustand with persist middleware for cart/wishlist
-- React Hook Form + Zod for all forms
-- **Drizzle ORM + Vercel Postgres** (products, orders, users — DB-first with graceful legacy fallback)
-- NextAuth v4 for secure authentication
-- Sonner for elegant toast notifications
-- Vercel Blob for admin image uploads
-- Resend for transactional emails
-- Fully responsive + mobile-first with premium hamburger menu
-- Loading states, empty states, error boundaries, and delightful UX
-- SEO-optimized (sitemap, robots, JsonLd, rich metadata)
-- Security headers enabled
-- CI/CD with GitHub Actions (lint + typecheck + build)
+**Live:** [biyora-shop.vercel.app](https://biyora-shop.vercel.app) · also [btx33.vercel.app](https://btx33.vercel.app) (same project)
 
 ---
 
-## 🛠 Tech Stack
+## Features
 
-| Category              | Technology                                      |
-|-----------------------|-------------------------------------------------|
-| Framework             | Next.js 15 (App Router)                         |
-| Language              | TypeScript (strict)                             |
-| Styling               | Tailwind CSS 4 + shadcn/ui                      |
-| Animations            | Framer Motion                                   |
-| State Management      | Zustand + persist                               |
-| Forms & Validation    | React Hook Form + Zod                           |
-| Database & ORM        | **Drizzle ORM + @vercel/postgres** (primary for products) |
-| Authentication        | NextAuth v4                                     |
-| Payments              | **Paystack ready** (helper + env prepared)      |
-| Email                 | Resend                                          |
-| File Storage          | @vercel/blob                                    |
-| Notifications         | Sonner                                          |
-| Icons                 | Lucide React                                    |
-| Deployment            | Vercel (with Analytics + Speed Insights)        |
+### Shopping
+- Home, shop (search/filters/sort), product detail (gallery, lengths, reviews, related)
+- Persistent cart + wishlist (Zustand), quick view, recently viewed
+- Checkout with Nigerian states, shipping fee, **coupon codes**, Paystack payment
+- Order success with verification + retry; order history in account
+
+### Operations
+- Admin dashboard: products (quick + full edit, bulk actions), orders (search/filter/pagination/bulk status/**CSV export**)
+- Admin analytics: revenue, orders today, open pipeline, top products
+- Auth (NextAuth): customer signup/login, admin role, protected routes
+- Paystack: initialize → pending order → verify + webhook fulfill
+- Email: order confirmation + contact (Resend)
+- Wholesale inquiry, fabric calculator, journal, FAQ, about, contact
+
+### Engineering
+- Next.js 15 App Router, TypeScript, Tailwind 4, shadcn/ui
+- Drizzle + Neon/Vercel Postgres, Vercel Blob uploads
+- SEO: metadata, sitemap, robots, JSON-LD
+- Health: `GET /api/health`, webhook health `GET /api/paystack/webhook`
+- Rate limits on paystack + signup; structured logging
 
 ---
 
-## 🚀 Getting Started
+## Tech stack
 
-### 1. Clone the repository
+| Area | Stack |
+|------|--------|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| UI | Tailwind CSS 4, shadcn/ui, Framer Motion |
+| State | Zustand (persist) |
+| DB | Drizzle ORM + Neon / `@vercel/postgres` |
+| Auth | NextAuth v4 (credentials) |
+| Payments | Paystack |
+| Email | Resend |
+| Files | Vercel Blob |
+| Deploy | Vercel |
+
+---
+
+## Getting started
+
+### 1. Clone & install
 
 ```bash
 git clone https://github.com/idris81ahmad-cyber/biyora-shop.git
 cd biyora-shop
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Setup environment
+### 2. Environment
 
 ```bash
 cp .env.example .env.local
-# Fill in your keys (NextAuth secret, database, Resend, Paystack, etc.)
+# Or pull from Vercel: vercel env pull .env.local
 ```
 
-### 4. Run the development server
+**Critical variables**
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXTAUTH_SECRET` | Auth encryption (`node scripts/generate-secret.mjs`) |
+| `NEXTAUTH_URL` | e.g. `http://localhost:3000` or production URL |
+| `NEXT_PUBLIC_SITE_URL` | Canonical site URL (Paystack callback) |
+| `DATABASE_URL` / `POSTGRES_URL` | Neon Postgres |
+| `PAYSTACK_SECRET_KEY` | Server secret |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Client public key (same mode as secret) |
+
+**Recommended**
+
+| Variable | Purpose |
+|----------|---------|
+| `RESEND_API_KEY` | Order + contact emails |
+| `RESEND_FROM_EMAIL` | Verified sender |
+| `BLOB_READ_WRITE_TOKEN` | Admin image uploads |
+
+See `.env.example` for full list and comments.
+
+### 3. Database setup
+
+```bash
+npm run db:setup
+# optional force product seed:
+npm run db:setup -- --force-products
+```
+
+### 4. Dev server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-### 5. Database (recommended)
-
-```bash
-npm run db:generate
-npm run db:push
-```
-
-### 6. Build for production
-
-```bash
-npm run build
-npm start
-```
-
----
-
-## 📁 Project Structure
-
-```
-biyora-shop/
-├── app/                    # App Router pages + API routes
-│   ├── admin/              # Admin dashboard & login
-│   ├── api/                # Products, orders, reviews, auth, admin, upload, seed, etc.
-│   ├── shop/, products/, cart/, checkout/, success/
-│   ├── journal/, wholesale/, calculator/, account/, contact/, faq/, about/
-│   └── layout.tsx, providers.tsx
-├── components/             # Navbar, Footer, ProductCard, CartDrawer, modals, ui/, admin/
-├── lib/                    # cart-store, products-store, db (Drizzle), auth, paystack, utils
-├── data/products.json      # Default/legacy textile catalog
-├── types/                  # TypeScript interfaces
-├── scripts/                # Admin setup, testing, secret generation
-├── .github/workflows/      # CI + product sync
-└── drizzle.config.ts, next.config.ts, tsconfig.json
-```
-
----
-
-## 🧵 The 12 Premium Textile Products
-
-Curated selection of authentic, high-quality fabrics from Kano’s Kantin Kwari Market:
-
-| #  | Name                                      | Category                    | Price (₦)  | Length Options       |
-|----|-------------------------------------------|-----------------------------|------------|----------------------|
-| 1  | Royal Gold Ankara Wax Print               | Ankara Prints               | 18,500     | 5yd, 6yd            |
-| 2  | Swiss Voile Cord Lace – Ivory             | Premium Lace                | 48,000     | 5yd, 6yd            |
-| 3  | Premium Guinea Brocade – Burgundy         | Brocade & Damask            | 35,000     | 5yd, 6yd, 10yd      |
-| 4  | Indigo Adire Tie-Dye Fabric               | Adire & Tie-Dye             | 16,500     | 5yd, 6yd            |
-| 5  | French Guipure Lace – Champagne Gold      | Premium Lace                | 55,000     | 5yd                 |
-| 6  | Emerald Silk Chiffon – Luxe Drape         | Silk, Chiffon & Voile       | 29,500     | 5yd, 6yd            |
-| 7  | Premium Solid Cotton Poplin – Warm Cream  | Plain & Solid Premium Cottons | 12,800   | 5yd, 6yd, 10yd      |
-| 8  | Royal Blue Floral Ankara Wax Print        | Ankara Prints               | 19,200     | 5yd, 6yd            |
-| 9  | Gold Thread Swiss Lace – White            | Premium Lace                | 42,500     | 5yd, 6yd            |
-| 10 | Deep Green Damask Shadda                  | Brocade & Damask            | 38,000     | 5yd, 6yd, 10yd      |
-| 11 | Sunset Orange Handcrafted Adire           | Adire & Tie-Dye             | 24,000     | 5yd, 6yd            |
-| 12 | Soft Blush Pink Premium Voile             | Silk, Chiffon & Voile       | 15,200     | 5yd, 6yd, 10yd      |
-
-All products include rich descriptions, realistic specs, multiple image options, ratings, and stock levels. Products are served from **Drizzle + Vercel Postgres** when available (with automatic seeding from legacy sources).
-
----
-
-## 🛠 Product Data Layer (Drizzle Migration)
-
-The system is transitioning to **Drizzle ORM as the primary source of truth** for products:
-
-- `getProducts()`, `addProduct()`, `updateProduct()`, `deleteProduct()` prefer the database when connected.
-- Automatic seeding from `data/products.json` / Blob / GitHub on first run.
-- Admin can trigger re-seeding via `POST /api/admin/products/seed` (or using the Seed button in admin).
-- A reusable `<ProductManager />` component is available for the admin dashboard.
-- Legacy fallback (JSON, Vercel Blob, GitHub) still supported for flexibility.
-
-**Recommended for production:** Connect Vercel Postgres and run the seed from admin after deployment.
-
----
-
-## 💳 Payments (Paystack)
-
-Paystack integration foundation is ready:
-
-- `lib/paystack.ts` contains `initializePaystackPayment()` and `verifyPaystackPayment()` helpers.
-- Environment variables prepared in `.env.example`.
-- Next step: Wire into checkout flow + add webhook verification.
-
----
-
-## 🛠 How to Add New Fabrics
-
-**Best Option (Production):** Use the Admin Dashboard → Products section. Changes go directly to the database when connected.
-
-**Alternative (Code):** 
-1. Edit `data/products.json` (for initial/legacy data)
-2. Or call the admin seed endpoint after adding to defaults
-3. The shop automatically picks up DB data when available
-
----
-
-## 📦 Deployment (Vercel — Recommended)
-
-1. Push to GitHub
-2. Import repo on [vercel.com](https://vercel.com)
-3. Add environment variables from `.env.example` (especially `DATABASE_URL`, `NEXTAUTH_SECRET`, Resend, Paystack)
-4. Run `db:push`
-5. Deploy
-
-**Tip:** After first deployment with a database, visit Admin and use the “Seed / Sync to Database” button.
-
----
-
-## ✅ Quality & CI
+### 5. Scripts
 
 ```bash
 npm run lint
 npm run typecheck
 npm run build
+node scripts/test-webhook.mjs          # signature + health helpers
+node scripts/debug-payment.mjs [ref]   # Paystack + DB diagnostics
 ```
 
-GitHub Actions runs these checks on every push/PR. Security headers are enabled in production.
+---
+
+## Deployment (Vercel)
+
+1. Import the GitHub repo → Framework: Next.js.
+2. Set env vars (Production + Preview as needed).  
+   **`NEXT_PUBLIC_SITE_URL` must be your live domain** (not localhost).
+3. Connect Neon (or set `DATABASE_URL` / `POSTGRES_URL`).
+4. After first deploy: run `npm run db:setup` against production DB (or use a one-off job).
+5. Paystack Dashboard → Webhooks:
+
+```
+https://YOUR-DOMAIN/api/paystack/webhook
+# alias also works:
+https://YOUR-DOMAIN/api/webhooks/paystack
+```
+
+6. Verify:
+
+```
+GET https://YOUR-DOMAIN/api/health
+GET https://YOUR-DOMAIN/api/paystack/webhook
+```
+
+Prefer a **single** production domain. If both `biyora-shop.vercel.app` and `btx33.vercel.app` exist, pin aliases to the same Ready deployment.
 
 ---
 
-## 🗺 Future Roadmap (Prioritized)
+## Coupons (checkout)
 
-**High Priority (In Progress)**
-- Full Paystack integration in checkout + webhook
-- Complete admin product management UI polish
-- Finalize Drizzle migration for products
+| Code | Offer | Min subtotal |
+|------|--------|--------------|
+| `KWARI10` | 10% off | ₦25,000 |
+| `BIYORA5000` | ₦5,000 off | ₦50,000 |
+| `FABRIC15` | 15% off | ₦75,000 |
 
-**Medium Priority**
-- Real user reviews & ratings persistence
-- Order tracking page
-- Email templates & order confirmation emails
-
-**Nice to Have**
-- Multi-currency support
-- Digital swatch samples
-
-The current architecture is clean, scalable, and ready for these additions.
+Validated client-side for UX and **re-validated server-side** in `/api/paystack/initialize`.
 
 ---
 
-## 🙏 Credits & Inspiration
+## Admin
 
-- **Kantin Kwari Market, Kano** — The heartbeat of African textiles
-- Design direction inspired by premium Nigerian fashion houses and global luxury e-commerce standards
-- Built with love for African craftsmanship and modern digital experiences
-
----
-
-## 📄 License
-
-This project is open source for learning and personal/commercial use with attribution.  
-Created for Idris Ahmad — BIYORA SHOP.
+- URL: `/admin` (login `/admin/login`)
+- Default legacy admin may exist from seed — rotate credentials in production.
+- **Orders:** filters, bulk status, CSV export, analytics cards.
+- **Products:** quick edit vs full edit (images/specs).
 
 ---
 
-**Ready to launch your premium textile business?**  
-This repository is production-grade, beautiful, and fully functional with admin tools, auth, database layer, and rich content.
+## Troubleshooting
 
-Made with precision by a senior full-stack developer & product builder.
+| Symptom | Likely cause | Fix |
+|---------|----------------|-----|
+| Payment OK, success page errors | Stale domain / missing DB on that host | Use host with working `/api/health`; set `NEXT_PUBLIC_SITE_URL` |
+| `Database not configured` | Missing `POSTGRES_URL` / `DATABASE_URL` | Add Neon vars; redeploy |
+| Webhook 404 | Wrong path | Use `/api/paystack/webhook` or `/api/webhooks/paystack` |
+| No confirmation email | No `RESEND_API_KEY` or unverified domain | Set key + verify domain in Resend |
+| Amount mismatch on pay | Coupon/total out of sync | Re-apply coupon; ensure cart unchanged after apply |
+| Admin product edit fails | Was using unsupported PATCH | Current build supports `PATCH` `/api/admin/products/:id` |
+| Test vs live Paystack mix | Public/secret mode mismatch | Both keys test **or** both live |
 
-**Last updated:** July 2026 — Major batch of enhancements (Admin hardening, Drizzle progress, Paystack foundation)
+**Health check JSON**
+
+```bash
+curl -s https://YOUR-DOMAIN/api/health | jq
+# flags: database, paystack, nextAuth, email, blob
+```
+
+---
+
+## Project structure (high level)
+
+```
+app/                 # Pages + API routes
+components/          # UI, admin (ProductManager, OrderManager, AdminAnalytics)
+lib/                 # auth, db, paystack, coupons, email, env, rate-limit
+drizzle/             # SQL migrations
+scripts/             # db-setup, debug-payment, test-webhook
+public/images/       # Product assets
+```
+
+---
+
+## License
+
+See [LICENSE](./LICENSE).

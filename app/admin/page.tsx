@@ -10,6 +10,7 @@ import { categories } from "@/lib/products";
 import ProductImage from "@/components/ProductImage";
 import ProductManager from "@/components/admin/ProductManager";
 import OrderManager from "@/components/admin/OrderManager";
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
 
 interface ProductForm {
   name: string;
@@ -412,6 +413,7 @@ export default function AdminDashboard() {
 
       {activeTab === "orders" && (
         <div className="mb-10">
+          <AdminAnalytics />
           <OrderManager />
         </div>
       )}

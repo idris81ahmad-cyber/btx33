@@ -10,6 +10,7 @@ import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 import { validateEnvOnce } from "@/lib/env";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
+import { validateCoupon } from "@/lib/coupons";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +53,7 @@ export async function POST(request: NextRequest) {
         shipping?: ShippingJson;
         cartItems?: OrderItemJson[];
         subtotal?: number;
+        couponCode?: string;
       };
     };
 
@@ -98,11 +100,33 @@ export async function POST(request: NextRequest) {
     ).replace(/\/$/, "");
 
     const shippingFee = Number(metadata.shippingFee) || 0;
-    const discount = Number(metadata.discount) || 0;
     const subtotal =
       Number(metadata.subtotal) ||
       cartItems.reduce((sum, item) => sum + (Number(item.lineTotal) || 0), 0);
+
+    // Re-validate coupon server-side so clients cannot forge discounts
+    let discount = 0;
+    let couponCode: string | undefined;
+    const rawCoupon = metadata.couponCode?.trim();
+    if (rawCoupon) {
+      const result = validateCoupon(rawCoupon, subtotal);
+      if (!result.valid) {
+        return NextResponse.json({ error: result.message }, { status: 400 });
+      }
+      discount = result.discount;
+      couponCode = result.coupon.code;
+    }
+
+    const expectedTotal = Math.max(0, Math.round(subtotal + shippingFee - discount));
     const total = Math.round(Number(amount));
+    if (Math.abs(total - expectedTotal) > 1) {
+      return NextResponse.json(
+        {
+          error: `Amount mismatch. Expected ₦${expectedTotal.toLocaleString()} (subtotal + shipping − discount).`,
+        },
+        { status: 400 },
+      );
+    }
 
     const userId = parseUserId(metadata.userId ?? session?.user?.id);
 
@@ -118,9 +142,10 @@ export async function POST(request: NextRequest) {
       subtotal,
       shippingFee,
       discount,
-      total,
+      total: expectedTotal,
       paymentMethod: "paystack",
       notes: metadata.notes,
+      couponCode,
       status: "pending",
     });
 
@@ -137,7 +162,7 @@ export async function POST(request: NextRequest) {
     // Keep Paystack metadata small — cart lives in our DB under this reference
     const result = await initializePaystackPayment({
       email: email.trim(),
-      amount: Math.round(total * 100),
+      amount: Math.round(expectedTotal * 100),
       reference,
       callback_url: `${siteUrl.replace(/\/$/, "")}/checkout/success?reference=${encodeURIComponent(reference)}`,
       metadata: {
@@ -145,6 +170,7 @@ export async function POST(request: NextRequest) {
         fullName: shipping.fullName,
         phone: shipping.phone,
         userId: userId ?? null,
+        couponCode: couponCode ?? null,
       },
     });
 

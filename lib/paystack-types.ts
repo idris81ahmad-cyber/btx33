@@ -10,6 +10,7 @@ export interface PaystackPaymentMetadata {
   shippingFee?: number;
   discount?: number;
   subtotal?: number;
+  couponCode?: string | null;
   userId?: string | number | null;
   notes?: string;
 }
