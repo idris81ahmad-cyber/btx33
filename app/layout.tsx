@@ -76,8 +76,17 @@ export default function RootLayout({
       <body className="antialiased bg-[#F8F4EC] text-[#2C2522]">
         <OrganizationJsonLd />
         <Providers>
+          <a href="#main-content" className="skip-to-content">
+            Skip to main content
+          </a>
           <Navbar />
-          <main className="min-h-[calc(100vh-200px)] pb-16 md:pb-0">{children}</main>
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="min-h-[calc(100vh-200px)] pb-16 md:pb-0 outline-none"
+          >
+            {children}
+          </main>
           <UXProviders />
           <Footer />
           <Analytics />

@@ -11,9 +11,11 @@ import { useUIStore } from "@/lib/ui-store";
 
 interface ProductCardProps {
   product: Product;
+  /** LCP: set true for above-the-fold cards (e.g. first home/shop results). */
+  priority?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, priority = false }: ProductCardProps) {
   const setQuickViewProduct = useUIStore((s) => s.setQuickViewProduct);
   const displayPrice = product.salePrice || product.price;
   const hasSale = !!product.salePrice;
@@ -32,9 +34,15 @@ export default function ProductCard({ product }: ProductCardProps) {
     <article
       role="button"
       tabIndex={0}
+      aria-label={`Quick view ${product.name}, ₦${displayPrice.toLocaleString()}`}
       onClick={openQuickView}
-      onKeyDown={(e) => e.key === "Enter" && openQuickView()}
-      className="group block cursor-pointer"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openQuickView();
+        }
+      }}
+      className="group block cursor-pointer rounded-3xl focus-visible:ring-2 focus-visible:ring-[#C5A46E] focus-visible:ring-offset-2"
     >
       <div className="product-card bg-white rounded-3xl overflow-hidden h-full flex flex-col border border-[#D4C9B8] fabric-texture-hover transition-shadow hover:shadow-md">
         <div className="relative aspect-[4/3.2] bg-[#F4EDE3] overflow-hidden">
@@ -42,7 +50,8 @@ export default function ProductCard({ product }: ProductCardProps) {
             src={product.images[0]}
             alt={productImageAlt(product.name, product.category)}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 16vw"
+            priority={priority}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 16vw"
             className="group-hover:scale-[1.06] transition-transform duration-700"
           />
           <div className="absolute inset-0 fabric-weave-overlay opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -100,13 +109,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             <button
               type="button"
               onClick={handleQuickAdd}
-              className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border border-[#D4C9B8] hover:bg-[#6B2D3C] hover:text-white hover:border-[#6B2D3C] rounded-2xl transition-all active:scale-[0.985]"
+              aria-label={`Add ${product.name} to cart`}
+              className="flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border border-[#D4C9B8] hover:bg-[#6B2D3C] hover:text-white hover:border-[#6B2D3C] rounded-2xl transition-all active:scale-[0.985] min-h-[44px]"
             >
-              <ShoppingCart className="w-4 h-4" /> ADD
+              <ShoppingCart className="w-4 h-4" aria-hidden="true" /> ADD
             </button>
             <Link
               href={`/products/${product.slug}`}
-              className="px-4 py-3 text-sm border border-[#D4C9B8] rounded-2xl hover:bg-[#F8F4EC] transition"
+              aria-label={`View details for ${product.name}`}
+              className="px-4 py-3 text-sm border border-[#D4C9B8] rounded-2xl hover:bg-[#F8F4EC] transition min-h-[44px] inline-flex items-center"
             >
               Details
             </Link>

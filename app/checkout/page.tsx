@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AlertCircle, Loader2, Lock } from "lucide-react";
 import { mapPaymentInitError, type CheckoutError } from "@/lib/checkout-errors";
+import ErrorBanner from "@/components/ErrorBanner";
 
 type FieldErrors = Partial<Record<"fullName" | "email" | "phone" | "address" | "city", string>>;
 type CheckoutPhase = "idle" | "validating" | "initializing" | "redirecting";
@@ -433,18 +434,7 @@ export default function CheckoutPage() {
             </div>
 
             {paymentError && (
-              <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm">
-                <div className="flex gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold">{paymentError.title}</p>
-                    <p className="mt-1">{paymentError.message}</p>
-                    {paymentError.action && (
-                      <p className="mt-2 text-xs text-red-700/80">{paymentError.action}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <ErrorBanner error={paymentError} className="mt-4" />
             )}
 
             <button

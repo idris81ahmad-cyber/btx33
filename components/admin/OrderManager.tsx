@@ -273,12 +273,13 @@ export default function OrderManager() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search order #, name, email, city…"
-              className="input-premium rounded-xl px-3 py-2 text-sm w-full sm:w-72"
+              aria-label="Search orders"
+              className="input-premium rounded-xl px-3 py-2.5 text-sm w-full sm:w-72 min-h-[44px]"
             />
             <button
               type="button"
               onClick={() => void loadOrders()}
-              className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC]"
+              className="px-4 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-[#F8F4EC] min-h-[44px]"
             >
               Refresh
             </button>
@@ -323,7 +324,11 @@ export default function OrderManager() {
         )}
 
         {loading ? (
-          <div className="p-12 text-center text-[#6B5F54]">Loading orders…</div>
+          <div className="p-6 space-y-3" aria-busy="true" aria-label="Loading orders">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-24 skeleton rounded-2xl" />
+            ))}
+          </div>
         ) : orders.length === 0 ? (
           <div className="p-12 text-center text-[#6B5F54]">
             No orders yet. Place a test order on the live site to see it here.
@@ -333,7 +338,7 @@ export default function OrderManager() {
             No orders match your search or filters.
             <button
               type="button"
-              className="block mx-auto mt-3 text-sm underline"
+              className="block mx-auto mt-3 text-sm underline min-h-[44px]"
               onClick={() => {
                 setSearch("");
                 setStatusFilter("all");
@@ -344,7 +349,96 @@ export default function OrderManager() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile cards */}
+            <ul className="md:hidden divide-y divide-[#EDE6D9]" aria-label="Orders list">
+              {pageSlice.map((o) => {
+                const isUpdating = updatingIds.includes(o.orderNumber);
+                const isOpen = expanded === o.orderNumber;
+                return (
+                  <li key={o.orderNumber} className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(o.orderNumber)}
+                        onChange={() => toggleSelect(o.orderNumber)}
+                        className="accent-[#6B2D3C] mt-1 w-4 h-4"
+                        aria-label={`Select ${o.orderNumber}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-mono text-[11px] font-medium break-all">
+                          {o.orderNumber}
+                        </p>
+                        <p className="font-medium text-sm mt-1">{o.fullName}</p>
+                        <p className="text-xs text-[#6B5F54] truncate">{o.email}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium border capitalize ${orderStatusClass(o.status)}`}
+                          >
+                            {orderStatusLabel(o.status)}
+                          </span>
+                          <span className="text-sm font-semibold tabular-nums">
+                            ₦{(o.total ?? 0).toLocaleString()}
+                          </span>
+                          <span className="text-[10px] text-[#6B5F54]">
+                            {new Date(o.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[#6B5F54] mt-2 line-clamp-2">
+                          {formatShipping(o.shipping)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 pl-7">
+                      <label className="text-[10px] text-[#6B5F54] uppercase tracking-wide">
+                        Update status
+                        <select
+                          value={o.status}
+                          disabled={isUpdating}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            e.target.value = o.status;
+                            onStatusSelect(o, next);
+                          }}
+                          className="input-premium text-sm rounded-xl px-3 py-2.5 w-full mt-1 min-h-[44px] disabled:opacity-60"
+                          aria-label={`Status for ${o.orderNumber}`}
+                        >
+                          {ORDER_STATUSES.map((s) => (
+                            <option key={s} value={s}>
+                              {orderStatusLabel(s)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setExpanded(isOpen ? null : o.orderNumber)}
+                        className="text-xs text-[#6B2D3C] underline text-left min-h-[40px]"
+                      >
+                        {isOpen ? "Hide items" : "View items"}
+                      </button>
+                      {isOpen && (
+                        <ul className="text-xs text-[#6B5F54] space-y-1 bg-[#FBF8F3] rounded-xl p-3">
+                          {o.items?.length ? (
+                            o.items.map((item, idx) => (
+                              <li key={`${o.orderNumber}-m-${idx}`}>
+                                {item.name}
+                                {item.selectedLength ? ` · ${item.selectedLength}` : ""} ×{" "}
+                                {item.quantity}
+                              </li>
+                            ))
+                          ) : (
+                            <li>No item details stored.</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm min-w-[900px]">
                 <thead className="bg-[#F8F4EC] text-[#6B5F54]">
                   <tr>

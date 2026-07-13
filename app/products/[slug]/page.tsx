@@ -14,6 +14,7 @@ import { addToCartWithFeedback } from "@/lib/add-to-cart";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
 import { getSmartRelatedProducts } from "@/lib/related-products";
 import ProductReviews from "@/components/ProductReviews";
+import PageSkeleton from "@/components/PageSkeleton";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -23,6 +24,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -41,13 +43,27 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           setLoading(false);
         })
         .catch(() => {
-          router.replace("/shop");
+          setError("We could not load this fabric. Please try again.");
+          setLoading(false);
         });
     });
   }, [params, router]);
 
-  if (loading || !product) {
-    return <div className="max-w-7xl mx-auto px-6 py-20 text-center">Loading beautiful fabric details...</div>;
+  if (loading) {
+    return <PageSkeleton variant="detail" />;
+  }
+
+  if (error || !product) {
+    return (
+      <div className="max-w-md mx-auto px-6 py-20 text-center">
+        <p className="text-[#6B5F54] mb-4" role="alert">
+          {error || "Fabric not found."}
+        </p>
+        <Link href="/shop" className="btn-primary inline-block px-8 py-3">
+          Back to shop
+        </Link>
+      </div>
+    );
   }
 
   return <ProductDetailClient product={product} relatedProducts={relatedProducts} />;

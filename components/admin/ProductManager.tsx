@@ -673,37 +673,56 @@ export default function ProductManager({
           </div>
         )}
 
-        <div className={`flex items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-1.5 flex-wrap w-full ${embedded ? "" : "md:w-auto"}`}>
+        <div
+          className={`flex flex-col sm:flex-row sm:items-center gap-2 bg-white border border-[#D4C9B8] rounded-xl px-3 py-2 w-full ${embedded ? "" : "md:w-auto"}`}
+          role="search"
+          aria-label="Filter products"
+        >
           <input
-            type="text"
-            placeholder="Search..."
+            type="search"
+            placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-premium w-full md:w-36 text-sm border-0 focus:ring-0 px-2 py-1"
+            aria-label="Search products"
+            className="input-premium w-full sm:w-40 text-sm border-0 focus:ring-0 px-2 py-2 min-h-[40px]"
           />
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent w-full md:w-auto"
+            aria-label="Filter by category"
+            className="input-premium text-sm border-0 focus:ring-0 px-2 py-2 bg-transparent w-full sm:w-auto min-h-[40px]"
           >
             {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
           <select
             value={stockStatus}
             onChange={(e) => setStockStatus(e.target.value as StockStatus)}
-            className="input-premium text-sm border-0 focus:ring-0 px-2 py-1 bg-transparent w-full md:w-auto"
-            title="Stock status"
+            aria-label="Filter by stock status"
+            className="input-premium text-sm border-0 focus:ring-0 px-2 py-2 bg-transparent w-full sm:w-auto min-h-[40px]"
           >
             {stockStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
           {(searchTerm || selectedCategory !== 'All Categories' || stockStatus !== 'all') && (
-            <button onClick={clearFilters} className="text-xs px-3 py-1 text-[#6B5F54] hover:text-red-600 md:ml-1">Clear</button>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs px-3 py-2 text-[#6B5F54] hover:text-red-600 min-h-[40px]"
+            >
+              Clear
+            </button>
           )}
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-          <button onClick={openCreate} className="btn-primary px-4 py-2 text-sm flex-1 md:flex-none">+ Create</button>
-          <button onClick={handleSeedToDb} disabled={loading} className="px-4 py-2 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 flex-1 md:flex-none">
+          <button type="button" onClick={openCreate} className="btn-primary px-4 py-2.5 text-sm flex-1 md:flex-none min-h-[44px]">
+            + Create
+          </button>
+          <button
+            type="button"
+            onClick={handleSeedToDb}
+            disabled={loading}
+            className="px-4 py-2.5 text-sm border border-[#D4C9B8] rounded-xl hover:bg-white/50 flex-1 md:flex-none min-h-[44px]"
+          >
             {loading ? 'Syncing...' : 'Seed DB'}
           </button>
         </div>

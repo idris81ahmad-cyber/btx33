@@ -74,7 +74,14 @@ export default function AccountPage() {
   };
 
   if (status === "loading" || !session) {
-    return <div className="max-w-4xl mx-auto px-6 py-20 text-center">Loading account...</div>;
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12 space-y-4" aria-busy="true" aria-label="Loading account">
+        <div className="h-8 w-56 skeleton rounded" />
+        <div className="h-4 w-40 skeleton rounded" />
+        <div className="h-44 skeleton rounded-3xl" />
+        <div className="h-64 skeleton rounded-3xl" />
+      </div>
+    );
   }
 
   return (

@@ -120,7 +120,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.04 }}
               >
-                <ProductCard product={product} />
+                <ProductCard product={product} priority={index < 2} />
               </motion.div>
             ))
           ) : (

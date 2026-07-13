@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle, Loader2, Mail, RefreshCw } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { mapVerifyError } from "@/lib/checkout-errors";
+import ErrorBanner from "@/components/ErrorBanner";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 
 interface Order {
@@ -233,14 +234,26 @@ function CheckoutSuccessContent() {
           className={`w-12 h-12 mx-auto mb-4 ${
             paymentConfirmed ? "text-emerald-600" : "text-amber-600"
           }`}
+          aria-hidden="true"
         />
         <div className="text-[#2C2522] font-semibold text-xl mb-2">
           {paymentConfirmed ? "Payment Confirmed" : "Payment verification pending"}
         </div>
-        <p className="text-[#6B5F54] mb-6">{error || "We could not confirm your payment."}</p>
+        <ErrorBanner
+          title={paymentConfirmed ? "Payment confirmed" : "Verification pending"}
+          message={error || "We could not confirm your payment."}
+          action={
+            paymentConfirmed
+              ? "Your payment succeeded. Contact support with your reference if details do not appear."
+              : "If you were charged, do not pay again — retry verification or contact support."
+          }
+          className="mb-6 text-left"
+        />
 
         {reference && (
-          <p className="text-xs font-mono text-[#6B5F54] mb-6">Reference: {reference}</p>
+          <p className="text-xs font-mono text-[#6B5F54] mb-6 break-all">
+            Reference: {reference}
+          </p>
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -248,34 +261,27 @@ function CheckoutSuccessContent() {
             type="button"
             onClick={() => void verifyPayment()}
             disabled={loading}
-            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 disabled:opacity-70"
+            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] disabled:opacity-70"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Retrying…
               </>
             ) : (
               <>
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
                 Retry verification
               </>
             )}
           </button>
           <Link
             href="/contact"
-            className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white"
+            className="px-6 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white min-h-[44px] inline-flex items-center justify-center"
           >
             Contact support
           </Link>
         </div>
-
-        {paymentConfirmed && (
-          <p className="text-xs text-[#6B5F54] mt-6 max-w-xs mx-auto">
-            Your payment was successful. If this issue persists, please contact support with the
-            reference above.
-          </p>
-        )}
       </div>
     );
   }
