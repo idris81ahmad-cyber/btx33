@@ -15,9 +15,16 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     endpoint: "/api/paystack/webhook",
+    aliases: ["/api/webhooks/paystack"],
     paystackConfigured: isPaystackEnvReady(),
     expects: "POST charge.success with x-paystack-signature",
-    productionUrl: "https://biyora-shop.vercel.app/api/paystack/webhook",
+    // Prefer stable production host; btx33 also works if it points at the same project
+    productionUrls: [
+      "https://biyora-shop.vercel.app/api/paystack/webhook",
+      "https://biyora-shop.vercel.app/api/webhooks/paystack",
+      "https://btx33.vercel.app/api/paystack/webhook",
+      "https://btx33.vercel.app/api/webhooks/paystack",
+    ],
   });
 }
 
