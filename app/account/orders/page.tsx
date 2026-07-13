@@ -27,6 +27,15 @@ interface OrderItem {
   unitPrice?: number;
 }
 
+interface StatusHistoryEvent {
+  id?: number;
+  fromStatus?: string | null;
+  toStatus: string;
+  note?: string | null;
+  actor?: string;
+  createdAt: string;
+}
+
 interface CustomerOrder {
   orderNumber: string;
   total: number;
@@ -40,6 +49,7 @@ interface CustomerOrder {
   couponCode?: string | null;
   items: OrderItem[];
   shipping?: ShippingJson;
+  statusHistory?: StatusHistoryEvent[];
 }
 
 type StatusFilter = "all" | string;
@@ -246,7 +256,10 @@ export default function OrderHistoryPage() {
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-[#EDE6D9]">
-                    <OrderDeliveryTimeline status={o.status} />
+                    <OrderDeliveryTimeline
+                      status={o.status}
+                      history={o.statusHistory}
+                    />
                   </div>
 
                   {o.items?.length > 0 && (

@@ -11,6 +11,7 @@ import ProductImage from "@/components/ProductImage";
 import ProductManager from "@/components/admin/ProductManager";
 import OrderManager from "@/components/admin/OrderManager";
 import AdminAnalytics from "@/components/admin/AdminAnalytics";
+import ReviewManager from "@/components/admin/ReviewManager";
 
 interface ProductForm {
   name: string;
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [storageReady, setStorageReady] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "orders" | "reviews">("products");
 
   useEffect(() => {
     if (status === "loading") return;
@@ -376,18 +377,30 @@ export default function AdminDashboard() {
         >
           Orders
         </button>
+        <button
+          onClick={() => setActiveTab("reviews")}
+          className={`px-5 py-2 rounded-xl text-sm font-medium transition ${activeTab === "reviews" ? "bg-[#6B2D3C] text-white" : "border border-[#D4C9B8] hover:bg-white/50"}`}
+        >
+          Reviews
+        </button>
       </div>
 
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="uppercase tracking-[3px] text-xs text-[#C5A46E] mb-1">BIYORA SHOP ADMIN</div>
           <h1 className="text-4xl font-semibold tracking-[-1.5px]">
-            {activeTab === "products" ? "Product Management" : "Order Management"}
+            {activeTab === "products"
+              ? "Product Management"
+              : activeTab === "orders"
+                ? "Order Management"
+                : "Review Moderation"}
           </h1>
           <p className="text-[#6B5F54] mt-1">
             {activeTab === "products"
               ? "Full CRUD • Image management • Live updates to shop"
-              : "View orders • Update status • Track fulfilment"}
+              : activeTab === "orders"
+                ? "View orders • Update status • Track fulfilment"
+                : "Approve or reject customer product reviews"}
             </p>
         </div>
 
@@ -415,6 +428,12 @@ export default function AdminDashboard() {
         <div className="mb-10">
           <AdminAnalytics />
           <OrderManager />
+        </div>
+      )}
+
+      {activeTab === "reviews" && (
+        <div className="mb-10">
+          <ReviewManager />
         </div>
       )}
 

@@ -13,6 +13,9 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error(error);
+    void import("@/lib/monitoring").then((m) =>
+      m.captureException(error, { boundary: "app/error" }),
+    );
   }, [error]);
 
   return (

@@ -51,15 +51,15 @@ if (!process.env.POSTGRES_URL && process.env.DATABASE_URL) {
 const forceProducts = process.argv.includes("--force-products");
 
 async function applySqlMigration() {
-  const migrationPath = resolve(process.cwd(), "drizzle/0000_initial_schema.sql");
-  if (!existsSync(migrationPath)) {
-    throw new Error(`Migration file not found: ${migrationPath}`);
-  }
+  const drizzleDir = resolve(process.cwd(), "drizzle");
+  const { readdirSync } = await import("node:fs");
+  const files = readdirSync(drizzleDir)
+    .filter((f) => f.endsWith(".sql"))
+    .sort();
 
-  const statements = readFileSync(migrationPath, "utf8")
-    .split(/--> statement-breakpoint/g)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  if (files.length === 0) {
+    throw new Error(`No SQL migrations found in ${drizzleDir}`);
+  }
 
   const client = new pg.Client({
     connectionString: databaseUrl,
@@ -68,8 +68,16 @@ async function applySqlMigration() {
 
   await client.connect();
   try {
-    for (const statement of statements) {
-      await client.query(statement);
+    for (const file of files) {
+      const migrationPath = resolve(drizzleDir, file);
+      console.log(`  · ${file}`);
+      const statements = readFileSync(migrationPath, "utf8")
+        .split(/--> statement-breakpoint/g)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      for (const statement of statements) {
+        await client.query(statement);
+      }
     }
   } finally {
     await client.end();

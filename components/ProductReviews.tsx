@@ -61,9 +61,14 @@ export default function ProductReviews({ productId, fallbackRating, fallbackCoun
       toast.error(err.error || "Could not submit review");
       return;
     }
-    toast.success("Thank you for your review!");
+    const data = await res.json().catch(() => ({}));
+    toast.success(
+      data.message ||
+        "Thank you! Your review was submitted and will appear after approval.",
+    );
     setForm({ authorName: "", rating: 5, title: "", body: "" });
-    loadReviews();
+    // Only approved reviews show — no need to reload for pending
+    if (!data.pending) loadReviews();
   };
 
   return (

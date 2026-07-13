@@ -29,6 +29,9 @@
 - SEO: metadata, sitemap, robots, JSON-LD
 - Health: `GET /api/health`, webhook health `GET /api/paystack/webhook`
 - Rate limits on paystack + signup; structured logging
+- Automated tests: `npm test` (Vitest — coupons, webhook signature, rate limit, order status)
+- Review moderation in admin; order status history timeline
+- Optional Sentry via `SENTRY_DSN`; PWA service worker + offline cart (localStorage)
 
 ---
 
@@ -108,9 +111,16 @@ Open [http://localhost:3000](http://localhost:3000).
 ```bash
 npm run lint
 npm run typecheck
+npm test                               # Vitest critical-path unit tests
 npm run build
 node scripts/test-webhook.mjs          # signature + health helpers
 node scripts/debug-payment.mjs [ref]   # Paystack + DB diagnostics
+```
+
+After schema updates:
+
+```bash
+npm run db:setup
 ```
 
 ---

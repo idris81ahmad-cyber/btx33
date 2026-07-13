@@ -1,6 +1,7 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { OrderItemJson, ShippingJson } from "./schema";
+import { appendOrderStatusHistory } from "./order-history";
 
 type OrderStatus = (typeof schema.orderStatusEnum.enumValues)[number];
 
@@ -56,6 +57,15 @@ export async function createOrder(input: CreateOrderInput) {
         couponCode: input.couponCode,
       })
       .returning();
+    if (order) {
+      await appendOrderStatusHistory({
+        orderNumber: order.orderNumber,
+        fromStatus: null,
+        toStatus: order.status,
+        note: "Order created",
+        actor: order.paymentMethod === "paystack" ? "paystack" : "system",
+      });
+    }
     return order;
   } catch (e) {
     console.error("createOrder failed:", e);
@@ -81,6 +91,15 @@ export async function confirmPendingOrder(orderNumber: string) {
         ),
       )
       .returning();
+    if (order) {
+      await appendOrderStatusHistory({
+        orderNumber,
+        fromStatus: "pending",
+        toStatus: "confirmed",
+        note: "Payment confirmed",
+        actor: "paystack",
+      });
+    }
     return order ?? null;
   } catch (e) {
     console.error("confirmPendingOrder failed:", e);
@@ -141,11 +160,30 @@ export async function getOrdersByEmail(email: string) {
   }
 }
 
-export async function updateOrderStatus(orderNumber: string, status: typeof schema.orderStatusEnum.enumValues[number]) {
+export async function updateOrderStatus(
+  orderNumber: string,
+  status: typeof schema.orderStatusEnum.enumValues[number],
+  opts?: { actor?: string; note?: string },
+) {
   const db = getDb();
   if (!db) return false;
   try {
-    await db.update(schema.orders).set({ status }).where(eq(schema.orders.orderNumber, orderNumber));
+    const existing = await getOrderByNumber(orderNumber);
+    if (!existing) return false;
+    if (existing.status === status) return true;
+
+    await db
+      .update(schema.orders)
+      .set({ status })
+      .where(eq(schema.orders.orderNumber, orderNumber));
+
+    await appendOrderStatusHistory({
+      orderNumber,
+      fromStatus: existing.status,
+      toStatus: status,
+      note: opts?.note ?? "Status updated",
+      actor: opts?.actor ?? "admin",
+    });
     return true;
   } catch {
     return false;
@@ -156,17 +194,16 @@ export async function updateOrderStatus(orderNumber: string, status: typeof sche
 export async function updateOrdersStatus(
   orderNumbers: string[],
   status: typeof schema.orderStatusEnum.enumValues[number],
+  opts?: { actor?: string },
 ) {
-  const db = getDb();
-  if (!db || orderNumbers.length === 0) return 0;
-  try {
-    await db
-      .update(schema.orders)
-      .set({ status })
-      .where(inArray(schema.orders.orderNumber, orderNumbers));
-    return orderNumbers.length;
-  } catch (e) {
-    console.error("updateOrdersStatus failed:", e);
-    return 0;
+  if (orderNumbers.length === 0) return 0;
+  let count = 0;
+  for (const n of orderNumbers) {
+    const ok = await updateOrderStatus(n, status, {
+      actor: opts?.actor ?? "admin",
+      note: "Bulk status update",
+    });
+    if (ok) count += 1;
   }
+  return count;
 }

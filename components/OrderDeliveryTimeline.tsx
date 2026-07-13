@@ -6,11 +6,26 @@ import {
 } from "@/lib/order-status";
 import { cn } from "@/lib/utils";
 
+export type StatusHistoryEvent = {
+  id?: number;
+  fromStatus?: string | null;
+  toStatus: string;
+  note?: string | null;
+  actor?: string;
+  createdAt: string;
+};
+
 /**
  * Visual delivery progress for customers.
  * Steps: Confirmed → Preparing → Out for delivery → Delivered
  */
-export default function OrderDeliveryTimeline({ status }: { status: string }) {
+export default function OrderDeliveryTimeline({
+  status,
+  history,
+}: {
+  status: string;
+  history?: StatusHistoryEvent[];
+}) {
   if (status === "cancelled") {
     return (
       <div
@@ -81,6 +96,38 @@ export default function OrderDeliveryTimeline({ status }: { status: string }) {
         })}
       </ol>
       <p className="text-xs text-[#6B5F54] leading-relaxed">{orderStatusHelp(status)}</p>
+
+      {history && history.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-[#EDE6D9]">
+          <h4 className="text-[10px] uppercase tracking-wide text-[#6B5F54] mb-2">
+            Status history
+          </h4>
+          <ol className="space-y-2">
+            {[...history].reverse().map((h, i) => (
+              <li
+                key={h.id ?? `${h.toStatus}-${h.createdAt}-${i}`}
+                className="flex gap-2 text-xs text-[#6B5F54]"
+              >
+                <span className="tabular-nums shrink-0 w-[7.5rem] text-[10px]">
+                  {new Date(h.createdAt).toLocaleString()}
+                </span>
+                <span className="min-w-0">
+                  <span className="font-medium text-[#2C2522]">
+                    {orderStatusLabel(h.toStatus)}
+                  </span>
+                  {h.fromStatus ? (
+                    <span className="text-[#A89B8A]">
+                      {" "}
+                      (from {orderStatusLabel(h.fromStatus)})
+                    </span>
+                  ) : null}
+                  {h.note ? <span className="block text-[10px]">{h.note}</span> : null}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }

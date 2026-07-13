@@ -85,6 +85,12 @@ export const addresses = pgTable("addresses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const reviewModerationEnum = pgEnum("review_moderation", [
+  "pending",
+  "approved",
+  "rejected",
+]);
+
 export const reviews = pgTable("reviews", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").references(() => products.id).notNull(),
@@ -93,6 +99,19 @@ export const reviews = pgTable("reviews", {
   title: text("title"),
   body: text("body").notNull(),
   verified: boolean("verified").default(false),
+  /** Admin moderation: only approved reviews show on the storefront */
+  moderationStatus: reviewModerationEnum("moderation_status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/** Append-only status changes for delivery timeline history */
+export const orderStatusHistory = pgTable("order_status_history", {
+  id: serial("id").primaryKey(),
+  orderNumber: text("order_number").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status").notNull(),
+  note: text("note"),
+  actor: text("actor").notNull().default("system"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

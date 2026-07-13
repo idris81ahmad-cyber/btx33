@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession, authOptions } from "@/lib/auth";
 import { getOrdersByUserId, getOrdersByEmail } from "@/lib/db/orders";
+import { getOrderStatusHistory } from "@/lib/db/order-history";
 import { hasDatabase } from "@/lib/db";
 
 function serializeOrder(order: {
@@ -68,13 +69,29 @@ export async function GET() {
     map.set(o.orderNumber, o);
   }
 
-  const orders = Array.from(map.values())
-    .sort((a, b) => {
-      const ta = new Date(a.createdAt).getTime();
-      const tb = new Date(b.createdAt).getTime();
-      return tb - ta;
-    })
-    .map(serializeOrder);
+  const sorted = Array.from(map.values()).sort((a, b) => {
+    const ta = new Date(a.createdAt).getTime();
+    const tb = new Date(b.createdAt).getTime();
+    return tb - ta;
+  });
+
+  const orders = await Promise.all(
+    sorted.map(async (o) => {
+      const history = await getOrderStatusHistory(o.orderNumber);
+      return {
+        ...serializeOrder(o),
+        statusHistory: history.map((h) => ({
+          id: h.id,
+          fromStatus: h.fromStatus,
+          toStatus: h.toStatus,
+          note: h.note,
+          actor: h.actor,
+          createdAt:
+            h.createdAt instanceof Date ? h.createdAt.toISOString() : h.createdAt,
+        })),
+      };
+    }),
+  );
 
   return NextResponse.json({ orders });
 }

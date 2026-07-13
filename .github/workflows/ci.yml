@@ -23,6 +23,8 @@ jobs:
 
       - run: npm run typecheck
 
+      - run: npm test
+
       - run: npm run build
         env:
           NEXTAUTH_SECRET: ci-build-secret-placeholder

@@ -1,12 +1,21 @@
 {
   "name": "BIYORA SHOP",
   "short_name": "BIYORA",
-  "description": "Premium African Textiles from Kano's Kantin Kwari Market",
+  "description": "Premium African textiles from Kano's Kantin Kwari Market. Shop, cart, and track delivery.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#F8F4EC",
   "theme_color": "#6B2D3C",
+  "categories": ["shopping", "lifestyle"],
   "icons": [
+    {
+      "src": "/biyora-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/biyora-logo.png",
       "sizes": "512x512",
