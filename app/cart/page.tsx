@@ -3,15 +3,23 @@
 import Link from "next/link";
 import ProductImage from "@/components/ProductImage";
 import { useCartStore } from "@/lib/cart-store";
-import { Trash2, Plus, Minus, ArrowRight, Heart } from "lucide-react";
+import { Trash2, Plus, Minus, ArrowRight, Heart, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { cartItemToProduct } from "@/lib/cart-utils";
+import { useSession } from "next-auth/react";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCartStore();
   const addToWishlist = useWishlistStore((s) => s.add);
+  const { data: session } = useSession();
   const total = getTotalPrice();
+  const ordersHref =
+    session?.user?.role === "admin"
+      ? "/admin"
+      : session
+        ? "/account/orders"
+        : "/login?callbackUrl=/account/orders";
 
   if (items.length === 0) {
     return (
@@ -19,30 +27,48 @@ export default function CartPage() {
         <div className="text-7xl mb-6">🛍️</div>
         <h1 className="text-5xl tracking-[-1.5px] font-semibold mb-3">Your cart is empty</h1>
         <p className="text-[#6B5F54] mb-8">Discover beautiful premium fabrics from Kano&apos;s finest markets.</p>
-        <Link href="/shop" className="btn-primary inline-flex items-center gap-3 px-10 py-4 rounded-2xl text-lg">
-          Start Shopping <ArrowRight />
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+          <Link href="/shop" className="btn-primary inline-flex items-center gap-3 px-10 py-4 rounded-2xl text-lg">
+            Start Shopping <ArrowRight />
+          </Link>
+          <Link
+            href={ordersHref}
+            className="inline-flex items-center gap-2 px-6 py-3 border border-[#D4C9B8] rounded-2xl text-sm hover:bg-white min-h-[44px]"
+          >
+            <Package className="w-4 h-4" />
+            Track my orders
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <div className="text-xs tracking-[3px] text-[#C5A46E]">YOUR SELECTIONS</div>
           <h1 className="text-5xl tracking-[-2px] font-semibold">Shopping Cart</h1>
           <p className="text-[#6B5F54] mt-1">{items.length} item{items.length !== 1 ? "s" : ""} • {items.reduce((s, i) => s + i.quantity, 0)} total pieces</p>
         </div>
-        <button 
-          onClick={() => {
-            clearCart();
-            toast.info("Cart cleared");
-          }} 
-          className="text-sm text-red-600 hover:underline flex items-center gap-1"
-        >
-          CLEAR CART
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href={ordersHref}
+            className="inline-flex items-center gap-1.5 text-sm px-4 py-2 border border-[#D4C9B8] rounded-xl hover:bg-white min-h-[44px]"
+          >
+            <Package className="w-4 h-4" />
+            Order history
+          </Link>
+          <button 
+            onClick={() => {
+              clearCart();
+              toast.info("Cart cleared");
+            }} 
+            className="text-sm text-red-600 hover:underline flex items-center gap-1 min-h-[44px]"
+          >
+            CLEAR CART
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-8">

@@ -103,37 +103,54 @@ export default function Navbar() {
             {session ? (session.user.role === "admin" ? "Admin" : "Account") : "Sign in"}
           </Link>
 
-          <Link
-            href={ordersHref}
-            className={`relative flex items-center justify-center p-2.5 rounded-full hover:bg-white/60 transition-all active:scale-95 group ${
-              pathname.startsWith("/account/orders") ? "bg-white/70 text-[#6B2D3C]" : ""
-            }`}
-            aria-label="Order history and delivery status"
-            title="My orders"
+          {/* Orders + Cart clustered together */}
+          <div
+            className="flex items-center rounded-full border border-[#D4C9B8] bg-white/50 p-0.5 shadow-sm"
+            role="group"
+            aria-label="Cart and order history"
           >
-            <Package className="w-5 h-5 text-[#2C2522] group-hover:scale-105 transition" />
-          </Link>
+            <Link
+              href={ordersHref}
+              className={`relative flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 rounded-full transition-all active:scale-95 min-h-[40px] ${
+                pathname.startsWith("/account/orders")
+                  ? "bg-[#6B2D3C] text-white"
+                  : "hover:bg-white text-[#2C2522]"
+              }`}
+              aria-label="Order history and delivery status"
+              title="My orders"
+            >
+              <Package className="w-5 h-5 shrink-0" />
+              <span className="hidden sm:inline text-xs font-medium tracking-wide pr-0.5">
+                Orders
+              </span>
+            </Link>
 
-          <button
-            type="button"
-            onClick={() => setCartDrawerOpen(true)}
-            className="relative flex items-center justify-center p-2.5 rounded-full hover:bg-white/60 transition-all active:scale-95 group"
-            aria-label="Open cart"
-          >
-            <ShoppingCart className="w-5 h-5 text-[#2C2522] group-hover:scale-105 transition" />
-            <AnimatePresence>
-              {cartCount > 0 && (
-                <motion.div
-                  initial={{ scale: 0.6, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.6, opacity: 0 }}
-                  className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1.5 rounded-full bg-[#6B2D3C] text-white text-[10px] font-medium flex items-center justify-center ring-2 ring-[#F8F4EC]"
-                >
-                  {cartCount}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </button>
+            <span className="w-px h-5 bg-[#D4C9B8]" aria-hidden="true" />
+
+            <button
+              type="button"
+              onClick={() => setCartDrawerOpen(true)}
+              className="relative flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full hover:bg-white transition-all active:scale-95 min-h-[40px] text-[#2C2522]"
+              aria-label="Open cart"
+            >
+              <ShoppingCart className="w-5 h-5 shrink-0" />
+              <span className="hidden sm:inline text-xs font-medium tracking-wide">
+                Cart
+              </span>
+              <AnimatePresence>
+                {cartCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.6, opacity: 0 }}
+                    className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#6B2D3C] text-white text-[10px] font-medium flex items-center justify-center"
+                  >
+                    {cartCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </button>
+          </div>
 
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
