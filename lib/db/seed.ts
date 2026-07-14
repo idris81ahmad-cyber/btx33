@@ -1,47 +1,70 @@
+import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { getDb, hasDatabase, schema } from "./index";
 import { getDefaultProducts } from "@/lib/products-defaults";
+import { logger } from "@/lib/logger";
 
-/** Pre-hashed passwords match legacy admin credentials in lib/auth.ts */
-const ADMIN_SEEDS = [
-  {
-    email: "admin@biyorashop.com",
-    name: "BIYORA SHOP Admin",
-    passwordHash: "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
-    role: "admin" as const,
-  },
-  {
-    email: "halifa@biyorashop.com",
-    name: "Halifa Admin",
-    passwordHash: "$2b$10$NHjw7GrEcNuRFzc0ohscbelRgHmN41fJoJ55KhbQ0GoF0FaAvDRmW",
-    role: "admin" as const,
-  },
-];
-
+/**
+ * Bootstrap admins only from environment — never from hardcoded passwords.
+ *
+ * Set on first deploy (Production):
+ *   ADMIN_EMAIL=you@yourdomain.com
+ *   ADMIN_PASSWORD=long-random-secret
+ *
+ * Optional: ADMIN_NAME=BIYORA Admin
+ */
 export async function seedAdminUsers(): Promise<number> {
   const db = getDb();
   if (!db) return 0;
 
-  let created = 0;
-  for (const admin of ADMIN_SEEDS) {
-    const [existing] = await db
-      .select({ id: schema.users.id })
-      .from(schema.users)
-      .where(eq(schema.users.email, admin.email.toLowerCase()))
-      .limit(1);
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  const name = process.env.ADMIN_NAME?.trim() || "BIYORA SHOP Admin";
 
-    if (existing) continue;
-
-    await db.insert(schema.users).values({
-      email: admin.email.toLowerCase(),
-      name: admin.name,
-      passwordHash: admin.passwordHash,
-      role: admin.role,
-    });
-    created++;
+  if (!email || !password) {
+    logger.warn(
+      "seed",
+      "Skipping admin seed — set ADMIN_EMAIL and ADMIN_PASSWORD to bootstrap an admin",
+    );
+    return 0;
   }
 
-  return created;
+  if (password.length < 12) {
+    logger.error("seed", "ADMIN_PASSWORD must be at least 12 characters");
+    return 0;
+  }
+
+  const [existing] = await db
+    .select({ id: schema.users.id })
+    .from(schema.users)
+    .where(eq(schema.users.email, email))
+    .limit(1);
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  if (existing) {
+    // Only rotate when explicitly requested
+    if (process.env.ADMIN_FORCE_PASSWORD === "1") {
+      await db
+        .update(schema.users)
+        .set({ passwordHash, role: "admin", name })
+        .where(eq(schema.users.id, existing.id));
+      logger.ops("seed", "Admin password rotated via ADMIN_FORCE_PASSWORD", {
+        email,
+      });
+      return 1;
+    }
+    return 0;
+  }
+
+  await db.insert(schema.users).values({
+    email,
+    name,
+    passwordHash,
+    role: "admin",
+  });
+  logger.ops("seed", "Admin user created from ADMIN_EMAIL", { email });
+  return 1;
 }
 
 export async function seedProducts(force = false): Promise<number> {
@@ -52,7 +75,10 @@ export async function seedProducts(force = false): Promise<number> {
   if (products.length === 0) return 0;
 
   if (!force) {
-    const [existing] = await db.select({ id: schema.products.id }).from(schema.products).limit(1);
+    const [existing] = await db
+      .select({ id: schema.products.id })
+      .from(schema.products)
+      .limit(1);
     if (existing) return 0;
   } else {
     await db.delete(schema.products);

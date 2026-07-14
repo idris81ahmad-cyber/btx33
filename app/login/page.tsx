@@ -65,7 +65,10 @@ function LoginForm() {
           New customer? <Link href="/signup" className="text-[#6B2D3C] underline">Create account</Link>
         </p>
         <p className="text-center text-xs text-[#6B5F54]">
-          Admin? Use your admin username (e.g. halifa81)
+          Admin? Sign in with your admin email at{" "}
+          <Link href="/admin/login" className="text-[#6B2D3C] underline">
+            /admin/login
+          </Link>
         </p>
       </form>
     </div>

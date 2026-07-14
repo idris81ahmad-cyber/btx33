@@ -12,6 +12,11 @@ import { validateEnvOnce } from "@/lib/env";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { logger } from "@/lib/logger";
 import { validateCoupon } from "@/lib/coupons";
+import {
+  computeOrderTotal,
+  getShippingFee,
+  priceCartFromCatalog,
+} from "@/lib/order-pricing";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +59,7 @@ export async function POST(request: NextRequest) {
         shipping?: ShippingJson;
         cartItems?: OrderItemJson[];
         subtotal?: number;
+        shippingFee?: number;
         couponCode?: string;
       };
     };
@@ -67,8 +73,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cartItems = Array.isArray(metadata.cartItems) ? metadata.cartItems : [];
-    if (cartItems.length === 0) {
+    const rawCartItems = Array.isArray(metadata.cartItems) ? metadata.cartItems : [];
+    if (rawCartItems.length === 0) {
       return NextResponse.json(
         { error: "Cart is empty — add items before payment" },
         { status: 400 },
@@ -92,20 +98,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reference = `BIYORA-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-    // Prefer stable production domain so Paystack never redirects to a stale deployment URL
-    const siteUrl = (
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      process.env.NEXTAUTH_URL ||
-      "https://biyora-shop.vercel.app"
-    ).replace(/\/$/, "");
+    // Server-side pricing from catalog — ignore client unitPrice / lineTotal / subtotal
+    const priced = await priceCartFromCatalog(rawCartItems);
+    if (!priced.ok) {
+      return NextResponse.json({ error: priced.error }, { status: 400 });
+    }
+    const cartItems = priced.items;
+    const subtotal = priced.subtotal;
 
-    const shippingFee = Number(metadata.shippingFee) || 0;
-    const subtotal =
-      Number(metadata.subtotal) ||
-      cartItems.reduce((sum, item) => sum + (Number(item.lineTotal) || 0), 0);
+    // Shipping fee is server-owned (clients cannot lower it)
+    const shippingFee = getShippingFee();
 
-    // Re-validate coupon server-side so clients cannot forge discounts
+    // Re-validate coupon against server subtotal
     let discount = 0;
     let couponCode: string | undefined;
     const rawCoupon = metadata.couponCode?.trim();
@@ -118,23 +122,35 @@ export async function POST(request: NextRequest) {
       couponCode = result.coupon.code;
     }
 
-    const expectedTotal = Math.max(0, Math.round(subtotal + shippingFee - discount));
-    const total = Math.round(Number(amount));
-    if (Math.abs(total - expectedTotal) > 1) {
+    const expectedTotal = computeOrderTotal({ subtotal, shippingFee, discount });
+    const clientTotal = Math.round(Number(amount));
+    if (Math.abs(clientTotal - expectedTotal) > 1) {
+      logger.warn("paystack-init", "Client total rejected", {
+        clientTotal,
+        expectedTotal,
+        subtotal,
+        shippingFee,
+        discount,
+      });
       return NextResponse.json(
         {
-          error: `Amount mismatch. Expected ₦${expectedTotal.toLocaleString()} (subtotal + shipping − discount).`,
+          error: `Amount mismatch. Expected ₦${expectedTotal.toLocaleString()} (catalog subtotal + shipping − discount). Refresh the cart and try again.`,
+          expectedTotal,
         },
         { status: 400 },
       );
     }
 
-    // Resolve order email + userId carefully.
-    // Never trust client metadata.userId alone — it can attach the wrong account
-    // (e.g. stale session id with a different checkout email) and break history.
+    const reference = `BIYORA-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const siteUrl = (
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.NEXTAUTH_URL ||
+      "https://btx33.vercel.app"
+    ).replace(/\/$/, "");
+
+    // Resolve order email + userId carefully (never trust client userId alone)
     const checkoutEmail = email.trim().toLowerCase();
     const sessionEmail = session?.user?.email?.trim().toLowerCase() || "";
-    // Prefer session email when logged in so history matches the account in use
     const orderEmail = sessionEmail || checkoutEmail;
 
     let userId: number | undefined;
@@ -145,13 +161,11 @@ export async function POST(request: NextRequest) {
         if (sessionUser) userId = sessionUser.id;
       }
     }
-    // Guest (or email not matching session): only link if a user owns this email
     if (!userId) {
       const byOrderEmail = await getUserByEmail(orderEmail);
       if (byOrderEmail) userId = byOrderEmail.id;
     }
 
-    // Create pending order BEFORE redirect so verify never depends on Paystack metadata size/shape
     const pending = await createOrder({
       orderNumber: reference,
       userId,
@@ -174,6 +188,10 @@ export async function POST(request: NextRequest) {
       reference,
       userId: userId ?? null,
       email: orderEmail,
+      subtotal,
+      shippingFee,
+      discount,
+      total: expectedTotal,
     });
 
     if (!pending) {
@@ -186,12 +204,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Keep Paystack metadata small — cart lives in our DB under this reference
     const result = await initializePaystackPayment({
-      email: email.trim(),
+      email: orderEmail,
       amount: Math.round(expectedTotal * 100),
       reference,
-      callback_url: `${siteUrl.replace(/\/$/, "")}/checkout/success?reference=${encodeURIComponent(reference)}`,
+      callback_url: `${siteUrl}/checkout/success?reference=${encodeURIComponent(reference)}`,
       metadata: {
         orderNumber: reference,
         fullName: shipping.fullName,
@@ -205,6 +222,7 @@ export async function POST(request: NextRequest) {
       success: true,
       authorizationUrl: result.data.authorization_url,
       reference: result.data.reference,
+      total: expectedTotal,
     });
   } catch (error) {
     const message =

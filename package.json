@@ -23,6 +23,8 @@
     "db:setup": "node scripts/db-setup.mjs",
     "test:email": "node scripts/test-email.mjs",
     "test:order-email": "node scripts/send-test-order-email.mjs",
+    "admin:set-password": "node scripts/set-admin-password.mjs",
+    "admin:lock-compromised": "node scripts/lock-compromised-admins.mjs",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {

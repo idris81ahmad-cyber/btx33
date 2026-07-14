@@ -1,6 +1,11 @@
 const base = process.argv[2] ?? "https://btx33.vercel.app";
-const username = process.argv[3] ?? "halifa81";
-const password = process.argv[4] ?? "halifane1";
+const username = process.argv[3] ?? process.env.ADMIN_EMAIL;
+const password = process.argv[4] ?? process.env.ADMIN_PASSWORD;
+if (!username || !password) {
+  console.error("Usage: node scripts/test-add-product.mjs <baseUrl> <adminEmail> <password>");
+  console.error("Or set ADMIN_EMAIL and ADMIN_PASSWORD.");
+  process.exit(1);
+}
 
 function getCookies(headers) {
   return (headers.getSetCookie?.() ?? []).map((c) => c.split(";")[0]).join("; ");
@@ -15,7 +20,7 @@ const signInRes = await fetch(`${base}/api/auth/callback/credentials`, {
   headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookies },
   body: new URLSearchParams({
     csrfToken,
-    username,
+    email: username,
     password,
     json: "true",
     callbackUrl: `${base}/admin`,

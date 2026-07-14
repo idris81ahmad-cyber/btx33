@@ -25,8 +25,12 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
 
+    const email = username.trim().includes("@")
+      ? username.trim()
+      : username.trim();
+
     const result = await signIn("credentials", {
-      username,
+      email,
       password,
       redirect: false,
     });
@@ -42,7 +46,7 @@ export default function AdminLogin() {
       }
       router.push("/admin");
     } else if (result?.error === "CredentialsSignin") {
-      setError("Invalid username or password");
+      setError("Invalid email or password");
     } else {
       setError(
         result?.error ??
@@ -71,13 +75,14 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="text-sm text-[#6B5F54] block mb-1.5">USERNAME</label>
+            <label className="text-sm text-[#6B5F54] block mb-1.5">EMAIL</label>
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="input-premium w-full"
-              placeholder="admin"
+              placeholder="admin@yourdomain.com"
+              autoComplete="username"
               required
             />
           </div>

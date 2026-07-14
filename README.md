@@ -270,9 +270,20 @@ Config (`next.config.ts`): AVIF/WebP, Blob remote patterns, long cache TTL.
 
 ## Admin
 
-- `/admin` (login `/admin/login`)
-- Rotate seed credentials in production
-- Orders, products, **sales overview**, review moderation
+- `/admin` (login `/admin/login` with **email**, not a username)
+- **No hardcoded admin passwords** — auth is database-only
+- Bootstrap or rotate:
+
+```bash
+# Lock any known-leaked password hashes (run once after security fix)
+npm run admin:lock-compromised
+
+# Set a strong admin password (12+ chars)
+npm run admin:set-password -- you@yourdomain.com "YourLongRandomSecret1"
+```
+
+Optional env for first `db:setup` seed: `ADMIN_EMAIL` + `ADMIN_PASSWORD` (12+).  
+Never commit passwords. Orders, products, sales overview, review moderation.
 
 ---
 
