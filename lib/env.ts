@@ -66,6 +66,18 @@ export function getEnvReport(): EnvReport {
   if (!present("RESEND_API_KEY")) {
     missingOptional.push("RESEND_API_KEY");
     warnings.push("RESEND_API_KEY missing — order emails run in demo/log mode");
+  } else {
+    const from = process.env.RESEND_FROM_EMAIL || "";
+    if (!from.trim()) {
+      missingOptional.push("RESEND_FROM_EMAIL");
+      warnings.push(
+        "RESEND_FROM_EMAIL missing — defaults to onboarding@resend.dev (limited delivery)",
+      );
+    } else if (from.includes("onboarding@resend.dev") && process.env.NODE_ENV === "production") {
+      warnings.push(
+        "RESEND_FROM_EMAIL uses onboarding@resend.dev — verify a domain for production delivery",
+      );
+    }
   }
   if (!present("BLOB_READ_WRITE_TOKEN")) {
     missingOptional.push("BLOB_READ_WRITE_TOKEN");

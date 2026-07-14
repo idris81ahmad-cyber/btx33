@@ -260,6 +260,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                 alt={productImageAlt(product.name, product.category, selectedImageIndex)}
                 width={1200}
                 height={900}
+                sizes="(max-width: 1024px) 95vw, 1200px"
                 objectFit="contain"
                 className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
               />

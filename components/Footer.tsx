@@ -14,6 +14,7 @@ export default function Footer() {
               alt="BIYORA SHOP"
               width={36}
               height={36}
+              sizes="36px"
               className="w-9 h-9 rounded-full object-cover ring-1 ring-[#C5A46E]/30"
             />
             <span className="font-semibold text-xl tracking-[-0.8px] text-white">BIYORA SHOP</span>

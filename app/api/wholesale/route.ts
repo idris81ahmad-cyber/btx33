@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, schema as dbSchema } from "@/lib/db";
-import { Resend } from "resend";
+import { sendWholesaleInquiryEmail } from "@/lib/email";
+import { logger } from "@/lib/logger";
 
 const inquirySchema = z.object({
   company: z.string().min(2),
@@ -21,23 +22,20 @@ export async function POST(req: Request) {
       await db.insert(dbSchema.wholesaleInquiries).values(body);
     }
 
-    if (process.env.RESEND_API_KEY && process.env.CONTACT_INBOX_EMAIL) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL ?? "BIYORA SHOP <onboarding@resend.dev>",
-        to: process.env.CONTACT_INBOX_EMAIL,
-        subject: `Wholesale inquiry — ${body.company}`,
-        html: `<p><strong>${body.contactName}</strong> at ${body.company}</p>
-               <p>Email: ${body.email} | Phone: ${body.phone}</p>
-               <p>Fabrics: ${body.fabricTypes}</p>
-               <p>Quantity: ${body.estimatedQuantity}</p>
-               <p>${body.message ?? ""}</p>`,
+    // Best-effort notify — inquiry is already stored when DB is available
+    const emailResult = await sendWholesaleInquiryEmail(body);
+    if (!emailResult.ok && !emailResult.demo) {
+      logger.warn("wholesale", "Inquiry saved but notify email failed", {
+        company: body.company,
+        error: emailResult.error,
       });
     }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    if (e instanceof z.ZodError) return NextResponse.json({ error: e.errors[0]?.message }, { status: 400 });
+    if (e instanceof z.ZodError) {
+      return NextResponse.json({ error: e.errors[0]?.message }, { status: 400 });
+    }
     return NextResponse.json({ error: "Failed to submit inquiry" }, { status: 500 });
   }
 }

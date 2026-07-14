@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "./index";
+import { logger } from "@/lib/logger";
 
 export async function getUserByEmail(email: string) {
   const db = getDb();
@@ -45,7 +46,9 @@ export async function createUser(data: {
       .returning();
     return user;
   } catch (e) {
-    console.error("createUser failed:", e);
+    logger.error("users", "createUser failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }

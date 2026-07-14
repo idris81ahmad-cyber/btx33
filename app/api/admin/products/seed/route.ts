@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { hasDatabase } from "@/lib/db";
 import { seedAdminUsers } from "@/lib/db/seed";
 import { forceSeedProductsToDb } from "@/lib/products-store";
+import { logger } from "@/lib/logger";
 
 export async function POST() {
   const session = await requireAdmin();
@@ -30,7 +31,9 @@ export async function POST() {
       seeded: { products, admins },
     });
   } catch (error) {
-    console.error("Seed database error:", error);
+    logger.error("admin-seed", "Seed database error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Failed to seed database" }, { status: 500 });
   }
 }

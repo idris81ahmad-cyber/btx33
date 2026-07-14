@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { getProducts, addProduct } from '@/lib/products-store';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   const session = await requireAdmin();
@@ -41,7 +42,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(newProduct, { status: 201 });
   } catch (error) {
-    console.error(error);
+    logger.error('admin-products', 'Create product failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     const message = error instanceof Error ? error.message : 'Failed to create product';
     const status = message.includes('read-only') || message.includes('Blob') ? 503 : 500;
     return NextResponse.json({ error: message }, { status });

@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb, schema } from "./index";
+import { logger } from "@/lib/logger";
 
 export type StatusHistoryRow = {
   id: number;
@@ -33,7 +34,9 @@ export async function appendOrderStatusHistory(input: {
       .returning();
     return row;
   } catch (e) {
-    console.error("appendOrderStatusHistory failed:", e);
+    logger.error("order-history", "appendOrderStatusHistory failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }

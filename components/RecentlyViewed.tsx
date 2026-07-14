@@ -35,7 +35,7 @@ export default function RecentlyViewed({ excludeId, title = "Recently Viewed" }:
                   src={product.images[0]}
                   alt={productImageAlt(product.name, product.category)}
                   fill
-                  sizes="150px"
+                  sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 150px"
                   className="group-hover:scale-105 transition-transform duration-500"
                 />
               </div>

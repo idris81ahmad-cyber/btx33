@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { Product } from "@/types/product";
+import { logger } from "@/lib/logger";
 
 function rowToProduct(row: typeof schema.products.$inferSelect): Product {
   return {
@@ -30,7 +31,9 @@ export async function getProductsFromDb(): Promise<Product[] | null> {
     const rows = await db.select().from(schema.products).orderBy(schema.products.id);
     return rows.map(rowToProduct);
   } catch (e) {
-    console.error("DB getProducts failed:", e);
+    logger.error("products", "DB getProducts failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }
@@ -81,7 +84,7 @@ export async function upsertProductInDb(product: Product): Promise<Product | nul
     const [row] = await db.insert(schema.products).values(values).returning();
     return row ? rowToProduct(row) : null;
   } catch (e) {
-    console.error("DB upsertProduct failed:", e);
+    logger.error("products", "DB upsertProduct failed", { error: e instanceof Error ? e.message : String(e) });
     return null;
   }
 }
@@ -136,7 +139,7 @@ export async function seedProductsToDb(products: Product[]): Promise<number> {
     }
     return products.length;
   } catch (e) {
-    console.error("DB seed failed:", e);
+    logger.error("products", "DB seed failed", { error: e instanceof Error ? e.message : String(e) });
     return 0;
   }
 }

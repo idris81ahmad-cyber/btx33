@@ -107,7 +107,7 @@ export default function ProductImage({
         alt={alt}
         width={width ?? 400}
         height={height ?? 300}
-        sizes={sizes}
+        sizes={sizes || `${width ?? 400}px`}
         priority={priority}
         quality={85}
         className={imageClass}

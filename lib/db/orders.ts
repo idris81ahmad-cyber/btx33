@@ -2,6 +2,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { OrderItemJson, ShippingJson } from "./schema";
 import { appendOrderStatusHistory } from "./order-history";
+import { logger } from "@/lib/logger";
 
 type OrderStatus = (typeof schema.orderStatusEnum.enumValues)[number];
 
@@ -73,7 +74,9 @@ export async function createOrder(input: CreateOrderInput) {
     }
     return order;
   } catch (e) {
-    console.error("createOrder failed:", e);
+    logger.error("orders", "createOrder failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }
@@ -111,7 +114,9 @@ export async function confirmPendingOrder(orderNumber: string) {
     }
     return order ?? null;
   } catch (e) {
-    console.error("confirmPendingOrder failed:", e);
+    logger.error("orders", "confirmPendingOrder failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }

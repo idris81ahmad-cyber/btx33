@@ -1,4 +1,5 @@
 import { Product } from "@/types/product";
+import { logger } from "@/lib/logger";
 
 const REPO = "idris81ahmad-cyber/biyora-shop";
 const FILE_PATH = "data/products.json";
@@ -48,7 +49,9 @@ export async function readProductsFromGitHub(): Promise<Product[] | null> {
     const parsed = JSON.parse(decoded);
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
   } catch (e) {
-    console.error("Failed to read products from GitHub", e);
+    logger.error("products-github", "Failed to read products from GitHub", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return null;
   }
 }

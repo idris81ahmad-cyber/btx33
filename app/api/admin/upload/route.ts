@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { authOptions, getServerSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -41,7 +42,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (error) {
-    console.error("Image upload failed", error);
+    logger.error("admin-upload", "Image upload failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
   }
 }

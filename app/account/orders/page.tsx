@@ -22,6 +22,7 @@ import {
   orderStatusLabel,
 } from "@/lib/order-status";
 import OrderDeliveryTimeline from "@/components/OrderDeliveryTimeline";
+import ProductImage from "@/components/ProductImage";
 import type { ShippingJson } from "@/lib/db/schema";
 import type { Product } from "@/types/product";
 import { useCartStore } from "@/lib/cart-store";
@@ -533,14 +534,24 @@ export default function OrderHistoryPage() {
                                   key={`${order.orderNumber}-item-${idx}`}
                                   className="flex items-start justify-between gap-3 px-4 py-3.5 text-sm"
                                 >
-                                  <div className="min-w-0">
-                                    <p className="font-medium text-[#2C2522] leading-snug">
-                                      {item.name}
-                                    </p>
-                                    <p className="text-xs text-[#6B5F54] mt-0.5">
-                                      {item.selectedLength || "Standard length"} · Qty{" "}
-                                      {item.quantity}
-                                    </p>
+                                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-[#F0E9DC] shrink-0 bg-[#F8F4EC]">
+                                      <ProductImage
+                                        src={item.image || "/images/ankara-premium.jpg"}
+                                        alt={item.name}
+                                        fill
+                                        sizes="56px"
+                                      />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-[#2C2522] leading-snug">
+                                        {item.name}
+                                      </p>
+                                      <p className="text-xs text-[#6B5F54] mt-0.5">
+                                        {item.selectedLength || "Standard length"} · Qty{" "}
+                                        {item.quantity}
+                                      </p>
+                                    </div>
                                   </div>
                                   {typeof item.lineTotal === "number" && (
                                     <p className="tabular-nums font-medium text-[#2C2522] shrink-0">

@@ -16,6 +16,7 @@ import {
 } from "@/lib/db/products";
 import { seedProducts } from "@/lib/db/seed";
 import { getDefaultProducts } from "@/lib/products-defaults";
+import { logger } from "@/lib/logger";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
@@ -60,7 +61,9 @@ function readProductsFromFilesystem(): Product[] | null {
       }
     }
   } catch (e) {
-    console.error("Failed to read products.json from filesystem", e);
+    logger.error("products-store", "Failed to read products.json from filesystem", {
+      error: e instanceof Error ? e.message : String(e),
+    });
   }
   return null;
 }
@@ -78,7 +81,10 @@ async function readProductsFromBlob(): Promise<Product[] | null> {
       const parsed = await res.json();
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     } catch (e) {
-      console.error(`Failed to read products from blob (${pathname})`, e);
+      logger.error("products-store", "Failed to read products from blob", {
+        pathname,
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
   }
   return null;
@@ -114,7 +120,9 @@ async function getProductsLegacy(): Promise<Product[]> {
       try {
         await writeProductsToBlob(fromFs);
       } catch (e) {
-        console.error("Failed to seed blob store from filesystem", e);
+        logger.error("products-store", "Failed to seed blob store from filesystem", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
     return fromFs;
@@ -169,12 +177,16 @@ export async function getProducts(): Promise<Product[]> {
       try {
         const seededCount = await seedProducts(false);
         if (seededCount > 0) {
-          console.log(`Seeded ${seededCount} products into database`);
+          logger.ops("products-store", "Seeded products into database", {
+            count: seededCount,
+          });
         }
         const seeded = await getProductsFromDb();
         if (seeded && seeded.length > 0) return seeded;
       } catch (e) {
-        console.error("DB seed during getProducts failed:", e);
+        logger.error("products-store", "DB seed during getProducts failed", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
       return legacy;
     }
@@ -192,7 +204,9 @@ async function saveProductsToDb(products: Product[]): Promise<boolean> {
     }
     return true;
   } catch (e) {
-    console.error("saveProductsToDb failed:", e);
+    logger.error("products-store", "saveProductsToDb failed", {
+      error: e instanceof Error ? e.message : String(e),
+    });
     return false;
   }
 }
