@@ -44,9 +44,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (session?.user?.email) {
+      // Always pin checkout email to the signed-in account so order history matches
       setFormData((prev) => ({
         ...prev,
-        email: prev.email || session.user.email || "",
+        email: session.user.email || prev.email,
         fullName: prev.fullName || session.user.name || "",
       }));
     }
@@ -193,11 +194,16 @@ export default function CheckoutPage() {
         country: "Nigeria",
       };
 
+      // Prefer account email when logged in — history is keyed by userId + email
+      const checkoutEmail =
+        session?.user?.email?.trim() || formData.email.trim();
+
       const res = await fetch("/api/paystack/initialize", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email.trim(),
+          email: checkoutEmail,
           amount: total,
           metadata: {
             fullName: shipping.fullName,

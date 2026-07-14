@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { createOrder } from "@/lib/db/orders";
 import { hasDatabase } from "@/lib/db";
+import { getUserByEmail } from "@/lib/db/users";
 import { parseUserId } from "@/lib/paystack-orders";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 import { validateEnvOnce } from "@/lib/env";
@@ -128,13 +129,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = parseUserId(metadata.userId ?? session?.user?.id);
+    // Resolve customer account so order history always links after login
+    const checkoutEmail = email.trim().toLowerCase();
+    let userId = parseUserId(metadata.userId ?? session?.user?.id);
+    if (!userId && session?.user?.email) {
+      const sessionUser = await getUserByEmail(session.user.email);
+      if (sessionUser?.role === "customer" || sessionUser?.role === "admin") {
+        userId = sessionUser.id;
+      }
+    }
+    if (!userId) {
+      const byCheckoutEmail = await getUserByEmail(checkoutEmail);
+      if (byCheckoutEmail) userId = byCheckoutEmail.id;
+    }
+
+    // Prefer session email when logged in so account history always matches
+    const orderEmail =
+      session?.user?.email?.trim().toLowerCase() || checkoutEmail;
 
     // Create pending order BEFORE redirect so verify never depends on Paystack metadata size/shape
     const pending = await createOrder({
       orderNumber: reference,
       userId,
-      email: email.trim(),
+      email: orderEmail,
       fullName: shipping.fullName,
       phone: shipping.phone,
       items: cartItems,
@@ -147,6 +164,12 @@ export async function POST(request: NextRequest) {
       notes: metadata.notes,
       couponCode,
       status: "pending",
+    });
+
+    logger.ops("paystack-init", "Pending order created", {
+      reference,
+      userId: userId ?? null,
+      email: orderEmail,
     });
 
     if (!pending) {

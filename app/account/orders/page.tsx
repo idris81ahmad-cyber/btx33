@@ -149,18 +149,39 @@ export default function OrderHistoryPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
+
   const loadOrders = useCallback(() => {
     if (status !== "authenticated") return;
     setLoading(true);
     setError("");
-    fetch("/api/account/orders", { credentials: "include" })
+    fetch("/api/account/orders", {
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    })
       .then(async (r) => {
-        if (!r.ok) throw new Error("Could not load orders");
+        if (r.status === 401) {
+          throw new Error("Your session expired. Please sign in again.");
+        }
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(
+            typeof body?.error === "string" ? body.error : "Could not load orders",
+          );
+        }
         return r.json();
       })
-      .then((d) => setOrders(Array.isArray(d.orders) ? d.orders : []))
-      .catch(() =>
-        setError("We could not load your orders. Please check your connection and try again."),
+      .then((d) => {
+        setOrders(Array.isArray(d.orders) ? d.orders : []);
+        if (d?.meta?.email) setAccountEmail(String(d.meta.email));
+      })
+      .catch((err: unknown) =>
+        setError(
+          err instanceof Error
+            ? err.message
+            : "We could not load your orders. Please check your connection and try again.",
+        ),
       )
       .finally(() => setLoading(false));
   }, [status]);
@@ -308,6 +329,11 @@ export default function OrderHistoryPage() {
               </h1>
               <p className="mt-3 text-sm text-[#6B5F54] max-w-md leading-relaxed">
                 Follow every piece from confirmation through packing to your door.
+                {accountEmail ? (
+                  <span className="block mt-1 text-xs text-[#8A7E72]">
+                    Signed in as {accountEmail}
+                  </span>
+                ) : null}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -382,7 +408,7 @@ export default function OrderHistoryPage() {
 
         {/* Empty */}
         {orders.length === 0 && !error ? (
-          <EmptyOrdersState />
+          <EmptyOrdersState accountEmail={accountEmail} />
         ) : filtered.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-[#D4C9B8] bg-white/60 px-6 py-16 text-center">
             <p className="text-[#6B5F54] text-sm mb-4">No orders match this filter.</p>
@@ -634,7 +660,7 @@ function FilterChip({
   );
 }
 
-function EmptyOrdersState() {
+function EmptyOrdersState({ accountEmail }: { accountEmail?: string | null }) {
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-[#E8DFD0] bg-gradient-to-b from-white via-[#FBF8F3] to-[#F8F4EC] px-6 py-16 sm:py-20 text-center shadow-[0_8px_40px_-16px_rgba(44,37,34,0.15)]">
       <div
@@ -657,10 +683,18 @@ function EmptyOrdersState() {
         <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#2C2522] mb-3">
           No orders yet
         </h2>
-        <p className="text-sm text-[#6B5F54] max-w-sm mx-auto leading-relaxed mb-8">
+        <p className="text-sm text-[#6B5F54] max-w-sm mx-auto leading-relaxed mb-2">
           When you purchase premium Kwari fabrics, every delivery step will live here —
           elegant, clear, and always up to date.
         </p>
+        {accountEmail ? (
+          <p className="text-xs text-[#8A7E72] mb-8">
+            Looking up orders for{" "}
+            <span className="font-medium text-[#2C2522]">{accountEmail}</span>
+          </p>
+        ) : (
+          <div className="mb-8" />
+        )}
         <Link
           href="/shop"
           className="btn-primary inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-medium min-h-[48px] shadow-lg shadow-[#6B2D3C]/20"

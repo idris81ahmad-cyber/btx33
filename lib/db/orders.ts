@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { OrderItemJson, ShippingJson } from "./schema";
 import { appendOrderStatusHistory } from "./order-history";
@@ -42,7 +42,7 @@ export async function createOrder(input: CreateOrderInput) {
       .values({
         orderNumber: input.orderNumber,
         userId,
-        email: input.email,
+        email: input.email.trim().toLowerCase(),
         fullName: input.fullName,
         phone: input.phone || "N/A",
         status: input.status ?? "confirmed",
@@ -58,13 +58,18 @@ export async function createOrder(input: CreateOrderInput) {
       })
       .returning();
     if (order) {
-      await appendOrderStatusHistory({
-        orderNumber: order.orderNumber,
-        fromStatus: null,
-        toStatus: order.status,
-        note: "Order created",
-        actor: order.paymentMethod === "paystack" ? "paystack" : "system",
-      });
+      // Best-effort history — never fail order creation if migration not applied yet
+      try {
+        await appendOrderStatusHistory({
+          orderNumber: order.orderNumber,
+          fromStatus: null,
+          toStatus: order.status,
+          note: "Order created",
+          actor: order.paymentMethod === "paystack" ? "paystack" : "system",
+        });
+      } catch {
+        /* ignore */
+      }
     }
     return order;
   } catch (e) {
@@ -92,13 +97,17 @@ export async function confirmPendingOrder(orderNumber: string) {
       )
       .returning();
     if (order) {
-      await appendOrderStatusHistory({
-        orderNumber,
-        fromStatus: "pending",
-        toStatus: "confirmed",
-        note: "Payment confirmed",
-        actor: "paystack",
-      });
+      try {
+        await appendOrderStatusHistory({
+          orderNumber,
+          fromStatus: "pending",
+          toStatus: "confirmed",
+          note: "Payment confirmed",
+          actor: "paystack",
+        });
+      } catch {
+        /* history table optional — never block payment confirm */
+      }
     }
     return order ?? null;
   } catch (e) {
@@ -149,14 +158,39 @@ export async function getOrdersByUserId(userId: number) {
 export async function getOrdersByEmail(email: string) {
   const db = getDb();
   if (!db) return [];
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return [];
   try {
+    // Case-insensitive match so login email always finds checkout email
     return await db
       .select()
       .from(schema.orders)
-      .where(eq(schema.orders.email, email))
+      .where(sql`lower(${schema.orders.email}) = ${normalized}`)
       .orderBy(desc(schema.orders.createdAt));
   } catch {
     return [];
+  }
+}
+
+/** Attach user_id to past guest orders that used this email. */
+export async function linkOrdersToUser(userId: number, email: string) {
+  const db = getDb();
+  if (!db || !userId || !email) return 0;
+  const normalized = email.trim().toLowerCase();
+  try {
+    const result = await db
+      .update(schema.orders)
+      .set({ userId })
+      .where(
+        and(
+          sql`lower(${schema.orders.email}) = ${normalized}`,
+          sql`${schema.orders.userId} is null`,
+        ),
+      )
+      .returning({ id: schema.orders.id });
+    return result.length;
+  } catch {
+    return 0;
   }
 }
 
