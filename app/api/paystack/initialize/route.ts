@@ -129,23 +129,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve customer account so order history always links after login
+    // Resolve order email + userId carefully.
+    // Never trust client metadata.userId alone — it can attach the wrong account
+    // (e.g. stale session id with a different checkout email) and break history.
     const checkoutEmail = email.trim().toLowerCase();
-    let userId = parseUserId(metadata.userId ?? session?.user?.id);
-    if (!userId && session?.user?.email) {
-      const sessionUser = await getUserByEmail(session.user.email);
-      if (sessionUser?.role === "customer" || sessionUser?.role === "admin") {
-        userId = sessionUser.id;
+    const sessionEmail = session?.user?.email?.trim().toLowerCase() || "";
+    // Prefer session email when logged in so history matches the account in use
+    const orderEmail = sessionEmail || checkoutEmail;
+
+    let userId: number | undefined;
+    if (sessionEmail && sessionEmail === orderEmail) {
+      userId = parseUserId(session?.user?.id);
+      if (!userId) {
+        const sessionUser = await getUserByEmail(sessionEmail);
+        if (sessionUser) userId = sessionUser.id;
       }
     }
+    // Guest (or email not matching session): only link if a user owns this email
     if (!userId) {
-      const byCheckoutEmail = await getUserByEmail(checkoutEmail);
-      if (byCheckoutEmail) userId = byCheckoutEmail.id;
+      const byOrderEmail = await getUserByEmail(orderEmail);
+      if (byOrderEmail) userId = byOrderEmail.id;
     }
-
-    // Prefer session email when logged in so account history always matches
-    const orderEmail =
-      session?.user?.email?.trim().toLowerCase() || checkoutEmail;
 
     // Create pending order BEFORE redirect so verify never depends on Paystack metadata size/shape
     const pending = await createOrder({

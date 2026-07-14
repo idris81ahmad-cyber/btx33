@@ -177,7 +177,11 @@ export async function getOrdersByEmail(email: string) {
   }
 }
 
-/** Attach user_id to past guest orders that used this email. */
+/**
+ * Attach user_id to orders for this email.
+ * - Fills null user_id (guest checkouts)
+ * - Corrects wrong user_id when email belongs to this user
+ */
 export async function linkOrdersToUser(userId: number, email: string) {
   const db = getDb();
   if (!db || !userId || !email) return 0;
@@ -189,7 +193,7 @@ export async function linkOrdersToUser(userId: number, email: string) {
       .where(
         and(
           sql`lower(${schema.orders.email}) = ${normalized}`,
-          sql`${schema.orders.userId} is null`,
+          sql`(${schema.orders.userId} is null OR ${schema.orders.userId} <> ${userId})`,
         ),
       )
       .returning({ id: schema.orders.id });

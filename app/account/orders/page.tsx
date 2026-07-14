@@ -710,10 +710,13 @@ function EmptyOrdersState({ accountEmail }: { accountEmail?: string | null }) {
       title="No orders yet"
       description={
         accountEmail
-          ? `No orders found for ${accountEmail}. When you purchase Kwari fabrics, delivery steps will appear here.`
+          ? `No orders found for ${accountEmail}. Orders only show for the exact email you used at checkout — sign in with that email, or create an account with it. Prefer https://btx33.vercel.app (current live host).`
           : "When you purchase premium Kwari fabrics, every delivery step will live here — elegant, clear, and always up to date."
       }
-      actions={[{ label: "Start shopping", href: "/shop" }]}
+      actions={[
+        { label: "Start shopping", href: "/shop" },
+        { label: "Refresh", onClick: () => window.location.reload(), variant: "secondary" },
+      ]}
     />
   );
 }

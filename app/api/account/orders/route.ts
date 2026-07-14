@@ -68,18 +68,18 @@ export async function GET() {
     }
 
     const sessionEmail = session.user.email?.trim().toLowerCase() || "";
-    let userId = parseInt(session.user.id, 10);
-    if (Number.isNaN(userId) || userId <= 0) {
-      userId = 0;
-    }
-
-    // Resolve real DB user id (session id can be legacy non-numeric for some accounts)
-    if ((!userId || userId <= 0) && sessionEmail) {
+    // Prefer DB user id by email — session id alone can be stale/wrong across accounts
+    let userId = 0;
+    if (sessionEmail) {
       const dbUser = await getUserByEmail(sessionEmail);
       if (dbUser) userId = dbUser.id;
     }
+    if (!userId) {
+      const parsed = parseInt(session.user.id, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) userId = parsed;
+    }
 
-    // Backfill: attach any guest orders placed with this email
+    // Backfill + repair: attach orders for this email; fix wrong user_id
     if (userId > 0 && sessionEmail) {
       await linkOrdersToUser(userId, sessionEmail);
     }
