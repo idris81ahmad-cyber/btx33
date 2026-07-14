@@ -56,6 +56,23 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shippingFee = 2500;
 
+  // Prefill + auto-apply coupon from cart (?coupon=KWARI10)
+  useEffect(() => {
+    if (typeof window === "undefined" || !hydrated) return;
+    const code = new URLSearchParams(window.location.search).get("coupon");
+    if (!code) return;
+    const normalized = code.trim().toUpperCase();
+    setCouponInput(normalized);
+    const result = validateCoupon(normalized, subtotal);
+    if (result.valid) {
+      setAppliedCoupon(result.coupon);
+      setDiscount(result.discount);
+      setCouponMessage(`${result.coupon.label} applied`);
+    }
+    // only on hydrate — re-validate still runs via subtotal effect
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
+
   // Re-check coupon when cart total changes
   useEffect(() => {
     if (!appliedCoupon) return;

@@ -79,13 +79,19 @@ export default function ReviewManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div
+        className="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Filter reviews by moderation status"
+      >
         {(["pending", "approved", "rejected", "all"] as const).map((f) => (
           <button
             key={f}
             type="button"
+            role="tab"
+            aria-selected={filter === f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border capitalize min-h-[36px] ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border capitalize min-h-[40px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C5A46E] ${
               filter === f
                 ? "bg-[#6B2D3C] text-white border-[#6B2D3C]"
                 : "bg-white border-[#D4C9B8] text-[#6B5F54]"
@@ -97,7 +103,8 @@ export default function ReviewManager() {
         <button
           type="button"
           onClick={() => void load()}
-          className="px-3 py-1.5 text-xs border border-[#D4C9B8] rounded-full min-h-[36px]"
+          className="px-3 py-1.5 text-xs border border-[#D4C9B8] rounded-full min-h-[40px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C5A46E]"
+          aria-label="Refresh reviews"
         >
           Refresh
         </button>

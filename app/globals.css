@@ -100,6 +100,25 @@ body {
   outline-offset: 2px;
 }
 
+/* Utility used by screen-reader-only labels */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Ensure interactive controls have a min touch target when utility applied */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
 button:focus:not(:focus-visible),
 a:focus:not(:focus-visible),
 input:focus:not(:focus-visible),

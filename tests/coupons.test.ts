@@ -30,4 +30,16 @@ describe("validateCoupon", () => {
     expect(r.valid).toBe(true);
     if (r.valid) expect(r.discount).toBe(5_000);
   });
+
+  it("caps fixed discount at subtotal", () => {
+    const r = validateCoupon("BIYORA5000", 50_000);
+    expect(r.valid).toBe(true);
+    if (r.valid) expect(r.discount).toBe(5_000);
+  });
+
+  it("applies FABRIC15 percent", () => {
+    const r = validateCoupon("FABRIC15", 100_000);
+    expect(r.valid).toBe(true);
+    if (r.valid) expect(r.discount).toBe(15_000);
+  });
 });

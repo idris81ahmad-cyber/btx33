@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  FileText,
   Headphones,
   MapPin,
   Package,
@@ -23,11 +24,14 @@ import {
 } from "@/lib/order-status";
 import OrderDeliveryTimeline from "@/components/OrderDeliveryTimeline";
 import ProductImage from "@/components/ProductImage";
+import EmptyState from "@/components/EmptyState";
 import type { ShippingJson } from "@/lib/db/schema";
-import type { Product } from "@/types/product";
 import { useCartStore } from "@/lib/cart-store";
 import { useUIStore } from "@/lib/ui-store";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboard";
+import { buildReorderLines, totalReorderPieces } from "@/lib/reorder";
+import { downloadInvoiceHtml, openInvoiceWindow } from "@/lib/invoice";
 
 interface OrderItem {
   productId?: number;
@@ -52,6 +56,8 @@ interface StatusHistoryEvent {
 
 interface CustomerOrder {
   orderNumber: string;
+  email?: string;
+  fullName?: string;
   total: number;
   subtotal?: number;
   shippingFee?: number;
@@ -208,14 +214,15 @@ export default function OrderHistoryPage() {
   }, [orders, filter]);
 
   const copyOrderNumber = async (orderNumber: string) => {
-    try {
-      await navigator.clipboard.writeText(orderNumber);
+    const ok = await copyToClipboard(orderNumber);
+    if (ok) {
       setCopiedId(orderNumber);
-      toast.success("Order number copied", {
-        description: orderNumber,
-      });
-      window.setTimeout(() => setCopiedId((id) => (id === orderNumber ? null : id)), 2000);
-    } catch {
+      toast.success("Order number copied", { description: orderNumber });
+      window.setTimeout(
+        () => setCopiedId((id) => (id === orderNumber ? null : id)),
+        2000,
+      );
+    } else {
       toast.error("Could not copy — long-press to select the number");
     }
   };
@@ -223,51 +230,56 @@ export default function OrderHistoryPage() {
   const reorder = (order: CustomerOrder) => {
     const { addToCart } = useCartStore.getState();
     const { setCartDrawerOpen } = useUIStore.getState();
-    let added = 0;
+    const lines = buildReorderLines(order.items);
+    const pieces = totalReorderPieces(lines);
 
-    for (const item of order.items || []) {
-      const length = item.selectedLength || "5 yards";
-      const unit = item.unitPrice ?? (item.lineTotal && item.quantity
-        ? Math.round(item.lineTotal / item.quantity)
-        : 0);
-      const product = {
-        id: item.productId ?? 0,
-        slug: item.slug || `reorder-${item.name}`,
-        name: item.name,
-        category: item.category || "Fabric",
-        price: unit || 0,
-        images: item.image ? [item.image] : ["/images/ankara-premium.jpg"],
-        rating: 4.5,
-        reviewCount: 0,
-        shortDescription: "",
-        description: "",
-        inStock: 99,
-        colorFamily: "",
-        patternStyle: "",
-        lengthOptions: [length],
-        specifications: {},
-      } as Product;
-
-      const qty = Math.max(1, item.quantity || 1);
-      for (let i = 0; i < qty; i++) {
-        addToCart(product, length);
-        added += 1;
-      }
-    }
-
-    if (added === 0) {
+    if (pieces === 0) {
       toast.error("No items to reorder");
       return;
     }
 
+    for (const line of lines) {
+      addToCart(line.product, line.length, line.quantity);
+    }
+
     toast.success("Added to cart", {
-      description: `${added} piece(s) from ${order.orderNumber} are ready in your bag.`,
+      description: `${pieces} piece(s) from ${order.orderNumber} are ready in your bag.`,
       action: {
         label: "View cart",
         onClick: () => setCartDrawerOpen(true),
       },
     });
     setCartDrawerOpen(true);
+  };
+
+  const downloadInvoice = (order: CustomerOrder) => {
+    const payload = {
+      orderNumber: order.orderNumber,
+      email: order.email || accountEmail || "",
+      fullName: order.fullName || order.shipping?.fullName,
+      phone: order.phone || order.shipping?.phone,
+      status: order.status,
+      createdAt: order.createdAt,
+      paymentMethod: order.paymentMethod,
+      couponCode: order.couponCode,
+      items: order.items || [],
+      shipping: order.shipping,
+      subtotal: order.subtotal,
+      shippingFee: order.shippingFee,
+      discount: order.discount,
+      total: order.total,
+    };
+    const opened = openInvoiceWindow(payload);
+    if (!opened) {
+      downloadInvoiceHtml(payload);
+      toast.success("Invoice downloaded", {
+        description: "Open the HTML file and use Print → Save as PDF.",
+      });
+    } else {
+      toast.success("Invoice ready", {
+        description: "Use Print → Save as PDF in the new window.",
+      });
+    }
   };
 
   if (status === "loading" || (status === "authenticated" && loading)) {
@@ -422,7 +434,7 @@ export default function OrderHistoryPage() {
             </button>
           </div>
         ) : (
-          <ul className="space-y-5 sm:space-y-6" aria-label="Your orders">
+          <ul id="order-history-list" className="space-y-5 sm:space-y-6" aria-label="Your orders">
             {filtered.map((order) => {
               const itemsOpen = expandedItems[order.orderNumber] ?? (order.items?.length || 0) <= 3;
               const shipLines = formatShipping(order.shipping);
@@ -592,31 +604,47 @@ export default function OrderHistoryPage() {
                       )}
 
                       {/* Actions */}
-                      <div className="mt-6 flex flex-col sm:flex-row gap-2.5">
+                      <div
+                        className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+                        role="group"
+                        aria-label={`Actions for order ${order.orderNumber}`}
+                      >
                         <button
                           type="button"
                           onClick={() => reorder(order)}
-                          className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl bg-[#6B2D3C] text-white text-sm font-medium shadow-md shadow-[#6B2D3C]/20 hover:bg-[#5a2532] active:scale-[0.98] transition"
+                          className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl bg-[#6B2D3C] text-white text-sm font-medium shadow-md shadow-[#6B2D3C]/20 hover:bg-[#5a2532] active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
+                          aria-label={`Reorder items from ${order.orderNumber}`}
                         >
                           <ShoppingBag className="w-4 h-4" aria-hidden="true" />
                           Reorder
                         </button>
                         <button
                           type="button"
+                          onClick={() => downloadInvoice(order)}
+                          className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[#D4C9B8] bg-white text-sm font-medium text-[#2C2522] hover:border-[#C5A46E]/70 hover:bg-[#FBF8F3] active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
+                          aria-label={`Download invoice for ${order.orderNumber}`}
+                        >
+                          <FileText className="w-4 h-4 text-[#6B2D3C]" aria-hidden="true" />
+                          Invoice
+                        </button>
+                        <button
+                          type="button"
                           onClick={() =>
-                            toast.message("Tracking coming soon", {
+                            toast.message("Delivery timeline", {
                               description:
-                                "Live courier tracking will appear here. Your status timeline above is always up to date.",
+                                "Status steps above update as we pack and ship. Courier live-tracking arrives soon.",
                             })
                           }
-                          className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[#D4C9B8] bg-white text-sm font-medium text-[#2C2522] hover:border-[#C5A46E]/70 hover:bg-[#FBF8F3] active:scale-[0.98] transition"
+                          className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[#D4C9B8] bg-white text-sm font-medium text-[#2C2522] hover:border-[#C5A46E]/70 hover:bg-[#FBF8F3] active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
+                          aria-label={`View delivery info for ${order.orderNumber}`}
                         >
                           <Truck className="w-4 h-4 text-[#6B2D3C]" aria-hidden="true" />
                           Track delivery
                         </button>
                         <Link
                           href={`/contact?order=${encodeURIComponent(order.orderNumber)}&subject=${encodeURIComponent(`Order support — ${order.orderNumber}`)}`}
-                          className="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[#E8DFD0] text-sm font-medium text-[#6B5F54] hover:text-[#6B2D3C] hover:border-[#D4C9B8] hover:bg-white active:scale-[0.98] transition"
+                          className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl border border-[#E8DFD0] text-sm font-medium text-[#6B5F54] hover:text-[#6B2D3C] hover:border-[#D4C9B8] hover:bg-white active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
+                          aria-label={`Contact support about ${order.orderNumber}`}
                         >
                           <Headphones className="w-4 h-4" aria-hidden="true" />
                           Support
@@ -650,9 +678,10 @@ function FilterChip({
       type="button"
       role="tab"
       aria-selected={active}
+      aria-controls="order-history-list"
       onClick={onClick}
       className={cn(
-        "shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition min-h-[40px]",
+        "shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold border transition min-h-[40px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]",
         active
           ? "bg-[#6B2D3C] text-white border-[#6B2D3C] shadow-md shadow-[#6B2D3C]/25"
           : "bg-white/90 text-[#6B5F54] border-[#E0D6C6] hover:border-[#C5A46E]/60 hover:text-[#2C2522] hover:bg-white",
@@ -664,56 +693,27 @@ function FilterChip({
           "tabular-nums text-[10px] px-1.5 py-0.5 rounded-full font-medium",
           active ? "bg-white/20 text-white" : "bg-[#F8F4EC] text-[#6B5F54]",
         )}
+        aria-hidden="true"
       >
         {count}
       </span>
+      <span className="sr-only">{count} orders</span>
     </button>
   );
 }
 
 function EmptyOrdersState({ accountEmail }: { accountEmail?: string | null }) {
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-[#E8DFD0] bg-gradient-to-b from-white via-[#FBF8F3] to-[#F8F4EC] px-6 py-16 sm:py-20 text-center shadow-[0_8px_40px_-16px_rgba(44,37,34,0.15)]">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 20%, rgba(197,164,110,0.25), transparent 45%), radial-gradient(circle at 80% 70%, rgba(107,45,60,0.12), transparent 40%)",
-        }}
-        aria-hidden="true"
-      />
-      <div className="relative">
-        <div className="mx-auto mb-6 w-24 h-24 rounded-full border border-[#E8DFD0] bg-white shadow-inner flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#6B2D3C]/10 to-[#C5A46E]/25 flex items-center justify-center">
-            <Package className="w-8 h-8 text-[#6B2D3C]" strokeWidth={1.5} />
-          </div>
-        </div>
-        <p className="text-[11px] tracking-[0.28em] text-[#C5A46E] font-medium mb-3">
-          YOUR WARDROBE AWAITS
-        </p>
-        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#2C2522] mb-3">
-          No orders yet
-        </h2>
-        <p className="text-sm text-[#6B5F54] max-w-sm mx-auto leading-relaxed mb-2">
-          When you purchase premium Kwari fabrics, every delivery step will live here —
-          elegant, clear, and always up to date.
-        </p>
-        {accountEmail ? (
-          <p className="text-xs text-[#8A7E72] mb-8">
-            Looking up orders for{" "}
-            <span className="font-medium text-[#2C2522]">{accountEmail}</span>
-          </p>
-        ) : (
-          <div className="mb-8" />
-        )}
-        <Link
-          href="/shop"
-          className="btn-primary inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-medium min-h-[48px] shadow-lg shadow-[#6B2D3C]/20"
-        >
-          Start shopping
-          <ShoppingBag className="w-4 h-4" />
-        </Link>
-      </div>
-    </div>
+    <EmptyState
+      icon={Package}
+      eyebrow="YOUR WARDROBE AWAITS"
+      title="No orders yet"
+      description={
+        accountEmail
+          ? `No orders found for ${accountEmail}. When you purchase Kwari fabrics, delivery steps will appear here.`
+          : "When you purchase premium Kwari fabrics, every delivery step will live here — elegant, clear, and always up to date."
+      }
+      actions={[{ label: "Start shopping", href: "/shop" }]}
+    />
   );
 }

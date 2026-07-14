@@ -4,7 +4,8 @@ import { CartItem, Product } from "@/types/product";
 
 interface CartStore {
   items: CartItem[];
-  addToCart: (product: Product, selectedLength: string) => void;
+  /** Add product; optional quantity (default 1) for reorder / bulk. */
+  addToCart: (product: Product, selectedLength: string, quantity?: number) => void;
   removeFromCart: (id: number | string, selectedLength: string) => void;
   updateQuantity: (id: number | string, selectedLength: string, quantity: number) => void;
   clearCart: () => void;
@@ -17,7 +18,8 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
 
-      addToCart: (product, selectedLength) => {
+      addToCart: (product, selectedLength, quantity = 1) => {
+        const qty = Math.max(1, Math.floor(Number(quantity) || 1));
         const currentPrice = product.salePrice || product.price;
         set((state) => {
           const existingItem = state.items.find(
@@ -28,7 +30,7 @@ export const useCartStore = create<CartStore>()(
             return {
               items: state.items.map((item) =>
                 item.id === product.id && item.selectedLength === selectedLength
-                  ? { ...item, quantity: item.quantity + 1 }
+                  ? { ...item, quantity: item.quantity + qty }
                   : item
               ),
             };
@@ -38,7 +40,7 @@ export const useCartStore = create<CartStore>()(
                 ...state.items,
                 {
                   ...product,
-                  quantity: 1,
+                  quantity: qty,
                   selectedLength,
                   currentPrice,
                 } as CartItem,

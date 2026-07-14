@@ -2,77 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AdminOrder } from "@/components/admin/OrderManager";
-
-type Stats = {
-  totalRevenue: number;
-  ordersToday: number;
-  revenueToday: number;
-  openOrders: number;
-  confirmedOrders: number;
-  topProducts: { name: string; quantity: number; revenue: number }[];
-};
-
-function startOfToday(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function computeStats(orders: AdminOrder[]): Stats {
-  const today = startOfToday();
-  let totalRevenue = 0;
-  let ordersToday = 0;
-  let revenueToday = 0;
-  let openOrders = 0;
-  let confirmedOrders = 0;
-  const productMap = new Map<string, { quantity: number; revenue: number }>();
-
-  for (const o of orders) {
-    const status = (o.status || "").toLowerCase();
-    if (status === "cancelled") continue;
-
-    const total = Number(o.total) || 0;
-    totalRevenue += total;
-    if (status === "confirmed" || status === "processing" || status === "shipped" || status === "delivered") {
-      confirmedOrders += 1;
-    }
-    if (status === "pending" || status === "confirmed" || status === "processing") {
-      openOrders += 1;
-    }
-
-    const created = new Date(o.createdAt);
-    if (!Number.isNaN(created.getTime()) && created >= today) {
-      ordersToday += 1;
-      revenueToday += total;
-    }
-
-    for (const item of o.items || []) {
-      const name = item.name || "Unknown";
-      const qty = Number(item.quantity) || 0;
-      const rawLine = (item as { lineTotal?: unknown }).lineTotal;
-      const line = typeof rawLine === "number" && Number.isFinite(rawLine) ? rawLine : 0;
-      const prev = productMap.get(name) || { quantity: 0, revenue: 0 };
-      productMap.set(name, {
-        quantity: prev.quantity + qty,
-        revenue: prev.revenue + line,
-      });
-    }
-  }
-
-  const topProducts = Array.from(productMap.entries())
-    .map(([name, v]) => ({ name, ...v }))
-    .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
-    .slice(0, 5);
-
-  return {
-    totalRevenue,
-    ordersToday,
-    revenueToday,
-    openOrders,
-    confirmedOrders,
-    topProducts,
-  };
-}
+import { computeSalesOverview } from "@/lib/analytics";
 
 export default function AdminAnalytics() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -97,25 +27,90 @@ export default function AdminAnalytics() {
     };
   }, []);
 
-  const stats = useMemo(() => computeStats(orders), [orders]);
+  const stats = useMemo(() => computeSalesOverview(orders), [orders]);
+  const maxDayRevenue = Math.max(1, ...stats.last7Days.map((d) => d.revenue));
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6" aria-busy="true">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-24 skeleton rounded-2xl" />
-        ))}
+      <div className="space-y-4 mb-8" aria-busy="true" aria-label="Loading sales overview">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 skeleton rounded-2xl" />
+          ))}
+        </div>
+        <div className="h-40 skeleton rounded-2xl" />
+        <div className="h-48 skeleton rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="mb-8 space-y-4">
+    <section className="mb-8 space-y-4" aria-labelledby="sales-overview-heading">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 id="sales-overview-heading" className="font-semibold text-lg tracking-tight">
+            Sales overview
+          </h2>
+          <p className="text-xs text-[#6B5F54] mt-0.5">
+            Live from confirmed orders · cancelled excluded from revenue
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard label="Total revenue" value={`₦${stats.totalRevenue.toLocaleString()}`} hint="Excludes cancelled" />
-        <StatCard label="Orders today" value={String(stats.ordersToday)} hint={`₦${stats.revenueToday.toLocaleString()} today`} />
-        <StatCard label="Open pipeline" value={String(stats.openOrders)} hint="Pending / confirmed / processing" />
-        <StatCard label="Paid orders" value={String(stats.confirmedOrders)} hint="Confirmed → delivered" />
+        <StatCard
+          label="Total revenue"
+          value={`₦${stats.totalRevenue.toLocaleString()}`}
+          hint="All non-cancelled orders"
+        />
+        <StatCard
+          label="Orders today"
+          value={String(stats.ordersToday)}
+          hint={`₦${stats.revenueToday.toLocaleString()} today`}
+        />
+        <StatCard
+          label="Average order"
+          value={`₦${stats.averageOrderValue.toLocaleString()}`}
+          hint={`${stats.paidOrders} paid orders`}
+        />
+        <StatCard
+          label="Open pipeline"
+          value={String(stats.openOrders)}
+          hint={
+            stats.cancelledOrders > 0
+              ? `${stats.cancelledOrders} cancelled (excluded)`
+              : "Pending / confirmed / processing"
+          }
+        />
+      </div>
+
+      <div className="bg-white border border-[#D4C9B8] rounded-2xl p-4 md:p-5">
+        <h3 className="font-semibold text-sm mb-4">Last 7 days</h3>
+        <div
+          className="flex items-end gap-2 sm:gap-3 h-32"
+          role="img"
+          aria-label="Revenue by day for the last 7 days"
+        >
+          {stats.last7Days.map((d) => {
+            const heightPct = Math.max(4, Math.round((d.revenue / maxDayRevenue) * 100));
+            return (
+              <div key={d.date} className="flex-1 flex flex-col items-center gap-1 min-w-0">
+                <span className="text-[10px] text-[#6B5F54] tabular-nums truncate w-full text-center">
+                  {d.revenue > 0 ? `₦${compactNaira(d.revenue)}` : "—"}
+                </span>
+                <div className="w-full flex items-end justify-center h-20">
+                  <div
+                    className="w-full max-w-[40px] rounded-t-md bg-gradient-to-t from-[#6B2D3C] to-[#C5A46E] transition-all"
+                    style={{ height: `${heightPct}%` }}
+                    title={`${d.label}: ${d.orders} orders, ₦${d.revenue.toLocaleString()}`}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-[#6B5F54]">{d.label}</span>
+                <span className="text-[10px] text-[#A89B8A] tabular-nums">{d.orders}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="bg-white border border-[#D4C9B8] rounded-2xl p-4 md:p-5">
@@ -142,8 +137,14 @@ export default function AdminAnalytics() {
           </ul>
         )}
       </div>
-    </div>
+    </section>
   );
+}
+
+function compactNaira(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return String(n);
 }
 
 function StatCard({

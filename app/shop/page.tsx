@@ -8,7 +8,8 @@ import ActiveFilterChips, { type FilterChip } from "@/components/ActiveFilterChi
 import { categories, colorFamilies, patternStyles } from "@/lib/products";
 import type { Product } from "@/types/product";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { Filter, X, Heart } from "lucide-react";
+import { Filter, X, Heart, ShoppingBag } from "lucide-react";
+import EmptyState from "@/components/EmptyState";
 
 const PRICE_MAX = 60000;
 
@@ -189,7 +190,8 @@ function ShopContent() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="bg-white border border-[#D4C9B8] rounded-2xl px-5 py-2.5 text-sm focus:outline-none focus:border-[#C5A46E]"
+            aria-label="Sort products"
+            className="bg-white border border-[#D4C9B8] rounded-2xl px-5 py-2.5 text-sm focus:outline-none focus:border-[#C5A46E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#C5A46E]"
           >
             <option value="featured">Sort: Featured</option>
             <option value="price-low">Price: Low to High</option>
@@ -329,18 +331,22 @@ function ShopContent() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 border border-dashed border-[#D4C9B8] rounded-3xl">
-              <div className="text-6xl mb-4">{showWishlist ? "💛" : "🧵"}</div>
-              <h3 className="text-2xl font-semibold mb-2">
-                {showWishlist ? "No saved fabrics yet" : "No fabrics found"}
-              </h3>
-              <p className="text-[#6B5F54]">
-                {showWishlist ? "Tap the heart on any fabric to save it here." : "Try adjusting your filters."}
-              </p>
-              <button type="button" onClick={clearFilters} className="mt-6 text-sm underline">
-                {showWishlist ? "Browse shop" : "Clear all filters"}
-              </button>
-            </div>
+            <EmptyState
+              icon={showWishlist ? Heart : ShoppingBag}
+              eyebrow={showWishlist ? "WISHLIST" : "NO MATCHES"}
+              title={showWishlist ? "No saved fabrics yet" : "No fabrics found"}
+              description={
+                showWishlist
+                  ? "Tap the heart on any fabric to save it here for later."
+                  : "Try adjusting filters or search — our full Kwari collection is a click away."
+              }
+              actions={[
+                showWishlist
+                  ? { label: "Browse shop", href: "/shop" }
+                  : { label: "Clear all filters", onClick: clearFilters, variant: "secondary" },
+                { label: "View all fabrics", href: "/shop" },
+              ]}
+            />
           )}
         </div>
       </div>
