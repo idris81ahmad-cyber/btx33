@@ -1,5 +1,7 @@
 "use client";
 
+import { Suspense, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,10 +16,30 @@ const contactSchema = z.object({
 
 type ContactForm = z.infer<typeof contactSchema>;
 
-export default function ContactPage() {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ContactForm>({
+function ContactFormInner() {
+  const searchParams = useSearchParams();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    setValue,
+  } = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
   });
+
+  useEffect(() => {
+    const order = searchParams.get("order");
+    const subject = searchParams.get("subject");
+    if (subject) setValue("subject", subject);
+    if (order) {
+      setValue(
+        "message",
+        `Hello BIYORA SHOP team,\n\nI need help with my order ${order}.\n\nPlease assist with delivery / status details.\n\nThank you.`,
+      );
+      if (!subject) setValue("subject", `Order support — ${order}`);
+    }
+  }, [searchParams, setValue]);
 
   const onSubmit = async (formData: ContactForm) => {
     const res = await fetch("/api/contact", {
@@ -71,8 +93,8 @@ export default function ContactPage() {
               {errors.message && <p className="text-xs text-red-600 mt-1">{errors.message.message}</p>}
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={isSubmitting}
               className="btn-primary w-full py-4 rounded-2xl text-lg font-medium disabled:opacity-70"
             >
@@ -81,25 +103,33 @@ export default function ContactPage() {
           </form>
         </div>
 
-        <div className="md:col-span-2 text-sm text-[#6B5F54] space-y-8 pt-2">
-          <div>
-            <div className="font-semibold text-[#2C2522] tracking-tight mb-1">HEAD OFFICE</div>
-            <div>Kantin Kwari Market<br />Kano, Nigeria</div>
-          </div>
-          <div>
-            <div className="font-semibold text-[#2C2522] tracking-tight mb-1">CUSTOMER CARE</div>
-            <a href="https://wa.me/2349061811134" target="_blank" className="block hover:text-[#C5A46E] transition">+234 906 181 1134 (WhatsApp)</a>
-            <a href="mailto:biyorashop@gmail.com" className="block hover:text-[#C5A46E] transition">biyorashop@gmail.com</a>
-          </div>
-          <div>
-            <div className="font-semibold text-[#2C2522] tracking-tight mb-1">BUSINESS HOURS</div>
-            <div>Monday – Saturday: 8am – 7pm WAT<br />Sunday: Closed</div>
-          </div>
-          <div className="pt-4 border-t border-[#D4C9B8] text-xs">
-            For wholesale, bulk orders, or collaborations with fashion designers and event planners, please reach out directly.
+        <div className="md:col-span-2 space-y-6 text-sm">
+          <div className="bg-white border border-[#D4C9B8] rounded-3xl p-6">
+            <div className="text-xs tracking-widest text-[#C5A46E] mb-3">VISIT & REACH US</div>
+            <p className="text-[#6B5F54] leading-relaxed">
+              Based in Kano with partners across Lagos. For wholesale and custom sourcing, WhatsApp is fastest.
+            </p>
+            <a href="https://wa.me/2349061811134" target="_blank" rel="noreferrer" className="block mt-4 hover:text-[#C5A46E] transition">
+              +234 906 181 1134 (WhatsApp)
+            </a>
+            <p className="mt-2 text-[#6B5F54]">hello@biyorashop.com</p>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-3xl mx-auto px-6 py-20 text-center text-[#6B5F54]">
+          Loading contact form…
+        </div>
+      }
+    >
+      <ContactFormInner />
+    </Suspense>
   );
 }
