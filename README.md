@@ -3,7 +3,8 @@
 > **Kwari Market Quality, Delivered.**  
 > Modern e-commerce for curated African textiles from Kano’s Kantin Kwari Market.
 
-**Live:** [biyora-shop.vercel.app](https://biyora-shop.vercel.app) · also [btx33.vercel.app](https://btx33.vercel.app) (same project)
+**Primary live host:** [btx33.vercel.app](https://btx33.vercel.app)  
+**Alias:** [biyora-shop.vercel.app](https://biyora-shop.vercel.app) (pin to the same Ready deployment)
 
 ---
 
@@ -13,36 +14,37 @@
 - Home, shop (search / filters / sort), product detail (gallery, lengths, reviews, related, recently viewed)
 - Persistent cart + wishlist (Zustand), quick view, add-to-cart fly animation
 - Checkout with Nigerian states, shipping fee, **coupon codes**, Paystack payment
-- Success page with verify + retry; **customer order history** with delivery timeline, reorder, support
+- Success page with verify + retry
+- **Customer order history** (`/account/orders`): delivery timeline, **reorder**, **copy order #**, **invoice download**, support link
 - Offline cart via PWA service worker + `localStorage`
 
 ### Customer account
 - Signup / login (NextAuth credentials)
 - `/account` profile + addresses
-- `/account/orders` — premium order history (status filters, copy order #, shipping details)
 - Orders linked by **userId + case-insensitive email** (guest checkouts backfilled on login)
 
 ### Operations (admin)
-- Dashboard: products (quick + full edit, bulk actions, Blob image upload)
+- Dashboard: products (quick + full edit, bulk, Blob image upload)
 - Orders: search / filter / pagination / bulk status / **CSV export**
-- Analytics: revenue, orders today, open pipeline, top products
-- Review moderation
+- **Sales overview** analytics (revenue, AOV, last 7 days, top products)
+- **Review moderation** (approve / reject / delete)
 - Protected `/admin` routes (role-based)
 
 ### Payments & email
 - Paystack: initialize → **pending order** → verify + webhook fulfill (idempotent)
-- Webhook paths: `/api/paystack/webhook` and alias `/api/webhooks/paystack`
-- Order confirmation emails via **Resend** (retries, structured logs, demo mode without key)
+- Webhooks: `/api/paystack/webhook` and alias `/api/webhooks/paystack`
+- Order confirmation emails via **Resend** (retries, structured logs)
 - Contact form + wholesale inquiry emails
+- Coupons: cart + checkout UI, `GET/POST /api/coupons`, server re-validation on pay
 
 ### Engineering
 - Next.js 15 App Router, TypeScript, Tailwind 4, shadcn/ui, Framer Motion
-- Drizzle ORM + Neon / Vercel Postgres, Vercel Blob uploads
+- Drizzle ORM + Neon / Vercel Postgres, Vercel Blob
 - SEO: metadata, sitemap, robots, JSON-LD
-- `next/image` product images (AVIF/WebP, blur placeholders, responsive `sizes`)
-- Health: `GET /api/health`; rate limits on Paystack + signup; structured logging
-- Tests: `npm test` (Vitest — coupons, webhook signature, rate limit, order status)
-- Optional Sentry (`SENTRY_DSN`); order status history table
+- **`next/image` everywhere** for product media (AVIF/WebP, blur, responsive `sizes` + `quality`)
+- Health: `GET /api/health`; rate limits; structured `logger` (no raw `console` in app paths)
+- Tests: `npm test` (Vitest)
+- Optional Sentry (`SENTRY_DSN`); order status history
 
 ---
 
@@ -63,143 +65,180 @@
 
 ---
 
-## Getting started
+## Environment variables
 
-### 1. Clone & install
+Copy `.env.example` → `.env.local`, or:
+
+```bash
+vercel env pull .env.local
+```
+
+### Critical (required)
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXTAUTH_SECRET` | Auth encryption — `node scripts/generate-secret.mjs` |
+| `NEXTAUTH_URL` | App origin (`http://localhost:3000` or production URL) |
+| `NEXT_PUBLIC_SITE_URL` | Canonical public URL (Paystack callback + email links). **Never localhost in Production** |
+| `DATABASE_URL` / `POSTGRES_URL` | Neon Postgres connection |
+| `PAYSTACK_SECRET_KEY` | Server secret |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Client public key (**same mode** as secret: both test or both live) |
+
+### Recommended (production)
+
+| Variable | Purpose |
+|----------|---------|
+| **`RESEND_API_KEY`** | **Required for real order emails.** Without it, confirmations run in demo/log mode and `/api/health` shows `email: false` |
+| `RESEND_FROM_EMAIL` | Verified sender, e.g. `BIYORA SHOP <hello@yourdomain.com>` |
+| `CONTACT_INBOX_EMAIL` | Inbox for contact + wholesale notifications |
+| `BLOB_READ_WRITE_TOKEN` | Admin product image uploads |
+
+### Optional
+
+| Variable | Purpose |
+|----------|---------|
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | Error monitoring |
+| `GITHUB_TOKEN` | Legacy product JSON fallback |
+| `NEXT_PUBLIC_PWA_DEV` | Register SW on localhost |
+
+### Email setup checklist (important)
+
+Production currently needs Resend configured or customers **will not** receive confirmation emails.
+
+1. Create an API key: [resend.com/api-keys](https://resend.com/api-keys)
+2. Verify a sending domain (or use `onboarding@resend.dev` only for sends to *your* Resend account email)
+3. In **Vercel → Project → Settings → Environment Variables** (Production + Preview):
+
+```
+RESEND_API_KEY=re_xxxxxxxx
+RESEND_FROM_EMAIL=BIYORA SHOP <hello@your-verified-domain.com>
+CONTACT_INBOX_EMAIL=hello@your-domain.com
+```
+
+4. **Redeploy** after adding vars
+5. Confirm:
+
+```bash
+# flags.email must be true
+curl -s https://btx33.vercel.app/api/health
+```
+
+6. Smoke-test without charging Paystack:
+
+```bash
+vercel env pull .env.local
+npm run test:order-email you@example.com
+# or simple ping:
+npm run test:email you@example.com
+```
+
+7. Place a small Paystack **test-mode** order → check inbox (and spam)
+
+---
+
+## Getting started
 
 ```bash
 git clone https://github.com/idris81ahmad-cyber/biyora-shop.git
 cd biyora-shop
 npm install
-```
-
-### 2. Environment
-
-```bash
-cp .env.example .env.local
-# Or pull from Vercel:
-vercel env pull .env.local
-```
-
-**Critical variables**
-
-| Variable | Purpose |
-|----------|---------|
-| `NEXTAUTH_SECRET` | Auth encryption (`node scripts/generate-secret.mjs`) |
-| `NEXTAUTH_URL` | e.g. `http://localhost:3000` or production URL |
-| `NEXT_PUBLIC_SITE_URL` | Canonical site URL (Paystack callback + email links) |
-| `DATABASE_URL` / `POSTGRES_URL` | Neon Postgres |
-| `PAYSTACK_SECRET_KEY` | Server secret |
-| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Client public key (**same mode** as secret) |
-
-**Recommended**
-
-| Variable | Purpose |
-|----------|---------|
-| `RESEND_API_KEY` | Order + contact emails |
-| `RESEND_FROM_EMAIL` | Verified sender, e.g. `BIYORA SHOP <hello@yourdomain.com>` |
-| `CONTACT_INBOX_EMAIL` | Inbox for contact + wholesale notifications |
-| `BLOB_READ_WRITE_TOKEN` | Admin image uploads |
-
-See `.env.example` for the full list.
-
-### 3. Database setup
-
-```bash
+cp .env.example .env.local   # or: vercel env pull .env.local
 npm run db:setup
-# optional force product seed:
-npm run db:setup -- --force-products
-```
-
-This applies schema (including `order_status_history` when present) and seeds admin users / products as needed.
-
-### 4. Dev server
-
-```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### 5. Scripts
+### Scripts
 
 ```bash
 npm run lint
 npm run typecheck
 npm test                               # Vitest unit tests
 npm run build
-npm run test:email you@example.com     # Resend delivery smoke test
-node scripts/test-webhook.mjs          # signature + health helpers
-node scripts/debug-payment.mjs [ref]   # Paystack + DB diagnostics
-node scripts/debug-order-link.mjs      # order ↔ user linking diagnostics
+npm run test:email you@example.com     # Resend ping
+npm run test:order-email you@…         # Full order-confirmation HTML
+npm run db:setup
+node scripts/test-webhook.mjs
+node scripts/debug-payment.mjs [ref]
+node scripts/debug-order-link.mjs
 ```
 
 ---
 
 ## Deployment (Vercel)
 
-### First-time setup
+### First-time / production
 
-1. **Import** the GitHub repo → Framework preset: **Next.js**.
-2. **Environment variables** (Production + Preview as needed):
-   - Set all **critical** vars above.
-   - **`NEXT_PUBLIC_SITE_URL` must be the live domain** (never `localhost` in Production).
-   - **`NEXTAUTH_URL`** should match the same production origin.
-3. **Database:** connect Neon (or paste `DATABASE_URL` / `POSTGRES_URL`).
-4. **Blob (optional but recommended):** connect Vercel Blob for product image uploads.
-5. Deploy, then run schema against production:
+1. Import the GitHub repo → Framework: **Next.js**
+2. Set **all critical env vars** (Production). Set `NEXT_PUBLIC_SITE_URL` and `NEXTAUTH_URL` to the live host (e.g. `https://btx33.vercel.app`)
+3. Connect Neon (or paste `DATABASE_URL` / `POSTGRES_URL`)
+4. Connect Vercel Blob for image uploads
+5. Add **Resend** vars (see email checklist above) — **do not skip**
+6. Deploy, then apply schema:
 
 ```bash
-# With production env available locally:
 vercel env pull .env.local
 npm run db:setup
 ```
 
-6. **Paystack Dashboard → Webhooks** (Settings → API Keys & Webhooks):
+7. Paystack Dashboard → Webhooks:
 
 ```
 https://YOUR-DOMAIN/api/paystack/webhook
-# alias also works:
+# alias:
 https://YOUR-DOMAIN/api/webhooks/paystack
 ```
 
-Signature is HMAC-SHA512 of the raw body with `PAYSTACK_SECRET_KEY`.
+Signature: HMAC-SHA512 of raw body with `PAYSTACK_SECRET_KEY`.
 
-7. **Resend**
-   - Create API key → `RESEND_API_KEY`
-   - Verify a sending domain → set `RESEND_FROM_EMAIL` to that domain  
-     (`onboarding@resend.dev` only delivers to your Resend account email)
-   - Smoke test: `npm run test:email your@email.com`
-
-8. **Verify deploy**
+8. Verify:
 
 ```bash
 curl -s https://YOUR-DOMAIN/api/health
-# flags: database, paystack, nextAuth, email, blob
+# expect: ok true, flags.database, paystack, nextAuth, email, blob
 
 curl -s https://YOUR-DOMAIN/api/paystack/webhook
-# webhook health (GET)
 ```
-
-### Domains
-
-Prefer a **single** production host. If both `biyora-shop.vercel.app` and `btx33.vercel.app` point at this project, pin aliases to the same **Ready** deployment so cookies, Paystack callbacks, and order history stay consistent.
 
 ### Production checklist
 
 | Check | How |
 |-------|-----|
 | Health OK | `GET /api/health` → `ok: true` |
-| Paystack keys same mode | both test **or** both live |
+| **Email ready** | `flags.email: true` |
+| Paystack same mode | both keys test **or** both live |
 | Site URL not localhost | `NEXT_PUBLIC_SITE_URL` on Vercel |
-| Webhook registered | Paystack dashboard hits live path |
-| Email domain verified | Resend + `RESEND_FROM_EMAIL` |
-| DB seeded | admin can log in; products appear |
-| Order history | place test order logged-in → `/account/orders` |
+| Webhook registered | Paystack hits live path |
+| DB seeded | admin login + products |
+| Order history | logged-in test order → `/account/orders` |
+| Confirmation email | test order or `npm run test:order-email` |
+
+Prefer **one** production domain. Pin `biyora-shop` and `btx33` aliases to the same Ready deployment.
 
 ---
 
-## Coupons (checkout)
+## Order & email flow
+
+```
+Checkout (prefer logged-in)
+  → POST /api/paystack/initialize
+      pending order (userId + email)
+  → Paystack payment
+  → /checkout/success?reference=… → POST /api/paystack/verify
+  → (also) POST /api/paystack/webhook
+  → fulfillPaystackPayment (idempotent)
+      pending → confirmed
+      stock deduct
+      sendOrderConfirmation (Resend, up to 3 retries)
+  → /account/orders
+```
+
+Without `RESEND_API_KEY`, email is **demo-only** (logged, not delivered).
+
+---
+
+## Coupons
 
 | Code | Offer | Min subtotal |
 |------|--------|--------------|
@@ -207,51 +246,33 @@ Prefer a **single** production host. If both `biyora-shop.vercel.app` and `btx33
 | `BIYORA5000` | ₦5,000 off | ₦50,000 |
 | `FABRIC15` | 15% off | ₦75,000 |
 
-Validated client-side for UX and **re-validated server-side** in `/api/paystack/initialize`.
+Cart → optional apply → checkout re-apply → **server validates** in `/api/paystack/initialize`.
 
----
-
-## Order & email flow
-
-```
-Checkout (logged-in preferred)
-  → POST /api/paystack/initialize
-      creates pending order (userId + email)
-      returns Paystack authorization_url
-  → Customer pays on Paystack
-  → Redirect /checkout/success?reference=…
-      POST /api/paystack/verify
-  → Webhook may also POST /api/paystack/webhook
-  → fulfillPaystackPayment (idempotent)
-      pending → confirmed
-      stock deduct
-      sendOrderConfirmation (Resend, up to 3 retries)
-  → Customer sees order in /account/orders
-```
-
-Without `RESEND_API_KEY`, confirmations run in **demo mode** (logged, not emailed). Health flag `email` reflects key presence.
-
----
-
-## Admin
-
-- URL: `/admin` (login `/admin/login`)
-- Rotate seed/legacy admin credentials in production.
-- **Orders:** filters, bulk status, CSV export, analytics.
-- **Products:** quick edit vs full edit (images / specs).
-- **Reviews:** moderation queue.
+API: `GET /api/coupons` (list), `POST /api/coupons` `{ code, subtotal }` (validate).
 
 ---
 
 ## Images
 
-Product UI uses `components/ProductImage.tsx` (wraps `next/image`):
+All product surfaces use `components/ProductImage.tsx` → **`next/image`**:
 
-- AVIF / WebP via `next.config.ts`
-- Blur placeholder for textile assets
-- Responsive `sizes` on cards, gallery, cart, order history, logos
-- Remote patterns for Vercel Blob hosts
-- Fallback to `/images/ankara-premium.jpg` on load error
+| Surface | Typical `sizes` | Quality |
+|---------|-----------------|---------|
+| Product cards | `(max-width: 640px) 100vw, … 16vw` | 75–85 |
+| PDP main gallery | `(max-width: 1024px) 100vw, 50vw` | 88 |
+| Lightbox | `95vw` / `1200px` | 90 |
+| Thumbs / cart / orders | `56px`–`112px` | 80 default |
+| Logos | `36px` | default |
+
+Config (`next.config.ts`): AVIF/WebP, Blob remote patterns, long cache TTL.
+
+---
+
+## Admin
+
+- `/admin` (login `/admin/login`)
+- Rotate seed credentials in production
+- Orders, products, **sales overview**, review moderation
 
 ---
 
@@ -259,32 +280,24 @@ Product UI uses `components/ProductImage.tsx` (wraps `next/image`):
 
 | Symptom | Likely cause | Fix |
 |---------|----------------|-----|
-| Payment OK, success page errors | Stale domain / missing DB on that host | Use host with working `/api/health`; set `NEXT_PUBLIC_SITE_URL` |
-| `Database not configured` | Missing `POSTGRES_URL` / `DATABASE_URL` | Add Neon vars; redeploy |
-| Webhook 404 | Wrong path | Use `/api/paystack/webhook` or `/api/webhooks/paystack` |
-| No confirmation email | Missing key, unverified domain, or onboarding sender | Set `RESEND_*`; `npm run test:email` |
-| Order not in history | Wrong login email / stale host | Sign in with checkout email; refresh; use current deploy |
-| Amount mismatch on pay | Coupon/total out of sync | Re-apply coupon; don’t change cart after apply |
-| Admin product edit fails | Older deploy without PATCH | Redeploy latest; `PATCH` `/api/admin/products/:id` |
-| Test vs live Paystack mix | Public/secret mode mismatch | Both keys test **or** both live |
-
-**Health check**
-
-```bash
-curl -s https://YOUR-DOMAIN/api/health | jq
-# flags: database, paystack, nextAuth, email, blob
-```
+| **No confirmation email** | `RESEND_API_KEY` missing (`flags.email: false`) | Add Resend env on Vercel, redeploy, `test:order-email` |
+| Email fails only for customers | Using `onboarding@resend.dev` | Verify domain + set `RESEND_FROM_EMAIL` |
+| Payment OK, success errors | Wrong host / missing DB | Use host with healthy `/api/health` |
+| Webhook 404 | Wrong path | `/api/paystack/webhook` or `/api/webhooks/paystack` |
+| Order missing from history | Different login email / stale alias | Same email as checkout; current deploy |
+| Amount mismatch | Coupon/cart drift | Re-apply coupon before pay |
+| Test vs live Paystack mix | Key mode mismatch | Both test or both live |
 
 ---
 
-## Project structure (high level)
+## Project structure
 
 ```
 app/                 # Pages + API routes
-components/          # UI, admin, ProductImage, order timeline
-lib/                 # auth, db, paystack, coupons, email, env, rate-limit, logger
+components/          # UI, admin, ProductImage, EmptyState, timelines
+lib/                 # auth, db, paystack, coupons, email, invoice, reorder, logger
 drizzle/             # SQL migrations
-scripts/             # db-setup, test-email, debug-payment, test-webhook
+scripts/             # db-setup, test-email, send-test-order-email, debug-*
 public/images/       # Product assets
 tests/               # Vitest critical-path tests
 ```

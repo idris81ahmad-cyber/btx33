@@ -14,6 +14,8 @@ interface ProductImageProps {
   height?: number;
   sizes?: string;
   priority?: boolean;
+  /** 1–100; default 80 for cards, use 85–90 for hero/gallery. */
+  quality?: number;
   objectFit?: "cover" | "contain";
   placeholder?: "blur" | "empty";
   /** Extra class for the outer wrapper when fill is used */
@@ -26,6 +28,10 @@ function isNativeImage(src: string): boolean {
 
 const FALLBACK = "/images/ankara-premium.jpg";
 
+/**
+ * Optimized product/media image via next/image.
+ * Always pass an explicit `sizes` for fill layouts to avoid oversized downloads.
+ */
 export default function ProductImage({
   src,
   alt,
@@ -35,6 +41,7 @@ export default function ProductImage({
   height,
   sizes = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw",
   priority = false,
+  quality = 80,
   objectFit = "cover",
   placeholder = "blur",
   wrapperClassName,
@@ -48,7 +55,9 @@ export default function ProductImage({
   const blurProps = useBlur
     ? { placeholder: "blur" as const, blurDataURL: TEXTILE_BLUR }
     : {};
+  const q = Math.min(100, Math.max(40, quality));
 
+  // data:/blob: previews (admin file pickers) cannot go through the optimizer
   if (isNativeImage(src) && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -71,7 +80,7 @@ export default function ProductImage({
 
   if (fill) {
     return (
-      <div className={cn("absolute inset-0", wrapperClassName)} aria-hidden={false}>
+      <div className={cn("absolute inset-0", wrapperClassName)}>
         {!loaded && (
           <div className="absolute inset-0 skeleton" aria-hidden="true" />
         )}
@@ -81,7 +90,7 @@ export default function ProductImage({
           fill
           sizes={sizes}
           priority={priority}
-          quality={85}
+          quality={q}
           className={imageClass}
           onLoad={() => setLoaded(true)}
           onError={() => {
@@ -109,7 +118,7 @@ export default function ProductImage({
         height={height ?? 300}
         sizes={sizes || `${width ?? 400}px`}
         priority={priority}
-        quality={85}
+        quality={q}
         className={imageClass}
         onLoad={() => setLoaded(true)}
         onError={() => {

@@ -52,6 +52,7 @@ export default function QuickViewModal() {
                     alt={productImageAlt(product.name, product.category)}
                     fill
                     sizes="(max-width: 768px) 100vw, 400px"
+                    quality={85}
                     className="object-cover"
                   />
                   <div className="absolute top-3 left-3">

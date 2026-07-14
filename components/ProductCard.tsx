@@ -51,6 +51,7 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             alt={productImageAlt(product.name, product.category)}
             fill
             priority={priority}
+            quality={priority ? 85 : 75}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 16vw"
             className="group-hover:scale-[1.06] transition-transform duration-700"
           />

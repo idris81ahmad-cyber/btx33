@@ -109,6 +109,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
+              quality={88}
               className="transition-transform duration-500 group-hover:scale-[1.015]"
             />
             <div className="absolute bottom-4 right-4 px-3 py-1 text-[10px] tracking-widest bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition">CLICK TO ENLARGE</div>
@@ -261,6 +262,7 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                 width={1200}
                 height={900}
                 sizes="(max-width: 1024px) 95vw, 1200px"
+                quality={90}
                 objectFit="contain"
                 className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl"
               />

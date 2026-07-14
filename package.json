@@ -22,6 +22,7 @@
     "db:seed": "tsx scripts/seed-db.ts",
     "db:setup": "node scripts/db-setup.mjs",
     "test:email": "node scripts/test-email.mjs",
+    "test:order-email": "node scripts/send-test-order-email.mjs",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
