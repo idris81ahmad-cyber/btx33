@@ -57,7 +57,7 @@ export default function SignupPage() {
         </div>
         <div>
           <Label>Password (min 6 characters)</Label>
-          <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-1.5 rounded-2xl" required minLength={6} />
+          <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="mt-1.5 rounded-2xl" required minLength={8} autoComplete="new-password" />
         </div>
         <Button type="submit" disabled={loading} className="w-full py-5 rounded-2xl bg-[#6B2D3C]">
           {loading ? "Creating account..." : "Create account"}
