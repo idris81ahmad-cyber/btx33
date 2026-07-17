@@ -13,6 +13,7 @@ import {
   upsertProductInDb,
   deleteProductFromDb,
   updateStockInDb,
+  decrementStockInDb,
 } from "@/lib/db/products";
 import { seedProducts } from "@/lib/db/seed";
 import { getDefaultProducts } from "@/lib/products-defaults";
@@ -298,6 +299,28 @@ export async function updateProductStock(id: number, inStock: number): Promise<b
   }
   const result = await updateProduct(id, { inStock });
   return result !== null;
+}
+
+/**
+ * Atomic stock decrement (DB). Falls back to read-modify-write only without DB.
+ * Returns false if insufficient stock or product missing.
+ */
+export async function decrementProductStock(
+  id: number,
+  quantity: number,
+): Promise<boolean> {
+  const qty = Math.floor(Number(quantity) || 0);
+  if (qty <= 0) return false;
+
+  if (hasDatabase()) {
+    const result = await decrementStockInDb(id, qty);
+    return result.ok;
+  }
+
+  const products = await getProducts();
+  const product = products.find((p) => p.id === id);
+  if (!product || product.inStock < qty) return false;
+  return updateProductStock(id, product.inStock - qty);
 }
 
 export async function deleteProduct(id: number): Promise<boolean> {

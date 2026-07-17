@@ -5,7 +5,7 @@ import {
 } from "@/lib/db/orders";
 import { hasDatabase } from "@/lib/db";
 import { sendOrderConfirmation } from "@/lib/email";
-import { getProducts, updateProductStock } from "@/lib/products-store";
+import { decrementProductStock } from "@/lib/products-store";
 import type { PaystackTransactionData } from "@/lib/paystack-types";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
 import { logger } from "@/lib/logger";
@@ -139,14 +139,17 @@ function serializeOrder<T extends { createdAt?: Date | string | null }>(order: T
 async function deductStock(cartItems: OrderItemJson[]) {
   if (!cartItems.length) return;
   try {
-    const products = await getProducts();
     for (const item of cartItems) {
-      const product = products.find((p) => p.id === item.productId);
-      if (product) {
-        await updateProductStock(
-          item.productId,
-          Math.max(0, product.inStock - item.quantity),
-        );
+      const qty = Math.max(1, Math.floor(Number(item.quantity) || 0));
+      if (!item.productId || qty <= 0) continue;
+      const ok = await decrementProductStock(item.productId, qty);
+      if (!ok) {
+        // Order already paid — log for ops; do not fail fulfillment
+        logger.warn("paystack-orders", "Stock decrement skipped or insufficient", {
+          productId: item.productId,
+          quantity: qty,
+          name: item.name,
+        });
       }
     }
   } catch (e) {

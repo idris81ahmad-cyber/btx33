@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, schema as dbSchema } from "@/lib/db";
 import { sendWholesaleInquiryEmail } from "@/lib/email";
 import { logger } from "@/lib/logger";
+import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 const inquirySchema = z.object({
   company: z.string().min(2),
@@ -14,15 +15,23 @@ const inquirySchema = z.object({
   message: z.string().optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req);
+    const rl = rateLimit(`wholesale:${ip}`, { limit: 5, windowMs: 15 * 60_000 });
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many inquiries. Please try again later." },
+        { status: 429, headers: rateLimitHeaders(rl) },
+      );
+    }
+
     const body = inquirySchema.parse(await req.json());
     const db = getDb();
     if (db) {
       await db.insert(dbSchema.wholesaleInquiries).values(body);
     }
 
-    // Best-effort notify — inquiry is already stored when DB is available
     const emailResult = await sendWholesaleInquiryEmail(body);
     if (!emailResult.ok && !emailResult.demo) {
       logger.warn("wholesale", "Inquiry saved but notify email failed", {
@@ -31,7 +40,7 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { headers: rateLimitHeaders(rl) });
   } catch (e) {
     if (e instanceof z.ZodError) {
       return NextResponse.json({ error: e.errors[0]?.message }, { status: 400 });

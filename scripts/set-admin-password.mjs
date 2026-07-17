@@ -42,8 +42,12 @@ const password = process.argv[3] || process.env.ADMIN_PASSWORD || "";
 const name = process.env.ADMIN_NAME || "BIYORA SHOP Admin";
 
 if (!email.includes("@") || password.length < 12) {
-  console.error("Usage: node scripts/set-admin-password.mjs <email> <password-min-12-chars>");
-  console.error("Or set ADMIN_EMAIL and ADMIN_PASSWORD (12+ chars) in the environment.");
+  console.error(
+    "Usage: node scripts/set-admin-password.mjs <email> <password-min-12-chars>",
+  );
+  console.error(
+    "Or set ADMIN_EMAIL and ADMIN_PASSWORD (12+ chars) in the environment.",
+  );
   process.exit(1);
 }
 

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { Product } from "@/types/product";
 import { logger } from "@/lib/logger";
@@ -104,10 +104,49 @@ export async function updateStockInDb(id: number, inStock: number): Promise<bool
   const db = getDb();
   if (!db) return false;
   try {
-    await db.update(schema.products).set({ inStock, updatedAt: new Date() }).where(eq(schema.products.id, id));
+    await db
+      .update(schema.products)
+      .set({ inStock, updatedAt: new Date() })
+      .where(eq(schema.products.id, id));
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Atomically decrement stock only if enough units remain.
+ * Returns true when a row was updated (no oversell under concurrency).
+ */
+export async function decrementStockInDb(
+  id: number,
+  quantity: number,
+): Promise<{ ok: boolean; remaining?: number }> {
+  const db = getDb();
+  if (!db || !Number.isInteger(quantity) || quantity <= 0) {
+    return { ok: false };
+  }
+  try {
+    const rows = await db
+      .update(schema.products)
+      .set({
+        inStock: sql`${schema.products.inStock} - ${quantity}`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(eq(schema.products.id, id), gte(schema.products.inStock, quantity)),
+      )
+      .returning({ id: schema.products.id, inStock: schema.products.inStock });
+
+    if (!rows[0]) return { ok: false };
+    return { ok: true, remaining: rows[0].inStock };
+  } catch (e) {
+    logger.error("products", "decrementStockInDb failed", {
+      id,
+      quantity,
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return { ok: false };
   }
 }
 

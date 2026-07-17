@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
-import { authOptions, getServerSession } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  const session = await requireAdmin();
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized - Admin access required" },
+      { status: 401 },
+    );
   }
 
   const hasBlob = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
