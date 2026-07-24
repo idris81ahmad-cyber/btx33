@@ -19,7 +19,7 @@ export type PricedCartResult =
       code: "empty" | "invalid_item" | "unknown_product" | "out_of_stock" | "catalog";
     };
 
-const DEFAULT_SHIPPING_FEE = 2500;
+
 
 export function catalogUnitPrice(product: Product): number {
   const sale = product.salePrice;
@@ -166,12 +166,7 @@ export async function priceCartFromCatalog(
   }
 }
 
-/** Canonical shipping fee for Nigeria (server-owned). */
-export function getShippingFee(): number {
-  const fromEnv = Number(process.env.SHIPPING_FEE_NGN);
-  if (Number.isFinite(fromEnv) && fromEnv >= 0) return Math.round(fromEnv);
-  return DEFAULT_SHIPPING_FEE;
-}
+export { getShippingFee } from "@/lib/shipping";
 
 export function computeOrderTotal(params: {
   subtotal: number;

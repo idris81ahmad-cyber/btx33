@@ -1,5 +1,14 @@
 /** Nigerian delivery estimates — fee display helpers + ETA copy */
 
+/** Server + client safe shipping fee (must match Paystack initialize). */
+export function getShippingFee(): number {
+  if (typeof process !== "undefined") {
+    const fromEnv = Number(process.env.SHIPPING_FEE_NGN);
+    if (Number.isFinite(fromEnv) && fromEnv >= 0) return Math.round(fromEnv);
+  }
+  return 2500;
+}
+
 const LAGOS_AREA = new Set(["Lagos", "Ogun", "Oyo", "Osun", "Ondo", "Ekiti"]);
 const KANO_ABUJA = new Set([
   "Kano",

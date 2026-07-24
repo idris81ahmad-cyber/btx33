@@ -25,8 +25,8 @@ import {
   CHECKOUT_STATES,
   DELIVERY_WINDOWS_BLURB,
   estimateShipping,
+  getShippingFee,
 } from "@/lib/shipping";
-import { getShippingFee } from "@/lib/order-pricing";
 import { cn } from "@/lib/utils";
 
 type FieldErrors = Partial<
