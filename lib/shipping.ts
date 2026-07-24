@@ -1,29 +1,87 @@
-const LAGOS_STATES = new Set(["Lagos", "Ogun", "Oyo", "Osun", "Ondo", "Ekiti"]);
-const NORTHERN_STATES = new Set([
-  "Kano", "Kaduna", "Katsina", "Jigawa", "Bauchi", "Gombe", "Borno", "Yobe",
-  "Adamawa", "Taraba", "Plateau", "Niger", "Kebbi", "Sokoto", "Zamfara",
+/** Nigerian delivery estimates — fee display helpers + ETA copy */
+
+const LAGOS_AREA = new Set(["Lagos", "Ogun", "Oyo", "Osun", "Ondo", "Ekiti"]);
+const KANO_ABUJA = new Set([
+  "Kano",
+  "Abuja",
+  "FCT - Abuja",
+  "Kaduna",
+  "Katsina",
+  "Jigawa",
 ]);
-const ABUJA_STATES = new Set(["FCT - Abuja"]);
+const NORTH = new Set([
+  "Bauchi",
+  "Gombe",
+  "Borno",
+  "Yobe",
+  "Adamawa",
+  "Taraba",
+  "Plateau",
+  "Niger",
+  "Kebbi",
+  "Sokoto",
+  "Zamfara",
+]);
+
+export const CHECKOUT_STATES = [
+  "Kano",
+  "Abuja",
+  "Lagos",
+  "Kaduna",
+  "Rivers",
+  "Oyo",
+  "Ogun",
+  "Enugu",
+  "Anambra",
+  "Delta",
+  "Edo",
+  "Kwara",
+  "Other",
+] as const;
 
 export interface ShippingEstimate {
   fee: number;
   label: string;
   eta: string;
+  /** One-line window for checkout UI */
+  windowSummary: string;
 }
 
 export function estimateShipping(state: string, subtotal: number): ShippingEstimate {
-  if (subtotal >= 75_000) {
-    return { fee: 0, label: "Free shipping", eta: "2–5 business days" };
-  }
+  const free = subtotal >= 75_000;
 
-  if (ABUJA_STATES.has(state)) {
-    return { fee: 2_500, label: "Abuja metro", eta: "1–3 business days" };
+  if (KANO_ABUJA.has(state)) {
+    return {
+      fee: free ? 0 : 2_500,
+      label: "Kano & Abuja corridor",
+      eta: "2–4 business days",
+      windowSummary: "Kano & Abuja: 2–4 business days",
+    };
   }
-  if (LAGOS_STATES.has(state)) {
-    return { fee: 3_000, label: "Southwest", eta: "2–4 business days" };
+  if (LAGOS_AREA.has(state)) {
+    return {
+      fee: free ? 0 : 2_500,
+      label: "Lagos & Southwest",
+      eta: "3–6 business days",
+      windowSummary: "Lagos corridor: 3–6 business days",
+    };
   }
-  if (NORTHERN_STATES.has(state)) {
-    return { fee: 2_000, label: "Northern Nigeria", eta: "2–4 business days" };
+  if (NORTH.has(state)) {
+    return {
+      fee: free ? 0 : 2_500,
+      label: "Northern Nigeria",
+      eta: "2–5 business days",
+      windowSummary: "Northern routes: 2–5 business days",
+    };
   }
-  return { fee: 4_500, label: "Nationwide", eta: "3–6 business days" };
+  return {
+    fee: free ? 0 : 2_500,
+    label: "Nationwide",
+    eta: "3–7 business days",
+    windowSummary: "Other states: 3–7 business days",
+  };
 }
+
+/** Static line used in checkout header / FAQ-style strip */
+export const DELIVERY_WINDOWS_BLURB =
+  "Kano & Abuja: 2–4 days · Lagos: 3–6 days · Other states: 3–7 days";

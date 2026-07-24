@@ -17,6 +17,7 @@ import { hydrateProduct } from "@/lib/product-education";
 import ProductReviews from "@/components/ProductReviews";
 import ProductEducation from "@/components/ProductEducation";
 import FabricCalculatorCta from "@/components/FabricCalculatorCta";
+import StockBadge from "@/components/StockBadge";
 import PageSkeleton from "@/components/PageSkeleton";
 
 interface ProductDetailPageProps {
@@ -214,11 +215,12 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
 
           <ProductEducation product={product} />
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[#6B5F54] mb-4">
-            <div className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
-              IN STOCK • {product.inStock} pieces remaining
-            </div>
-            <div>Free shipping on orders over ₦75,000</div>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[#6B5F54] mb-4">
+            <StockBadge inStock={product.inStock} alwaysShow />
+            {product.inStock > 0 && product.inStock <= 10 && (
+              <span className="text-xs">Act soon if this is your colour — popular pieces move fast.</span>
+            )}
+            <div className="text-xs">Free shipping on orders over ₦75,000</div>
           </div>
         </div>
       </div>

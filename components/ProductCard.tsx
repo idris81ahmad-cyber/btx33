@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Star, ShoppingCart, Eye } from "lucide-react";
 import ProductImage from "@/components/ProductImage";
 import WishlistButton from "@/components/WishlistButton";
+import StockBadge from "@/components/StockBadge";
 import { productImageAlt } from "@/lib/image-blur";
 import { Product } from "@/types/product";
 import { addToCartWithFeedback } from "@/lib/add-to-cart";
@@ -61,11 +62,14 @@ export default function ProductCard({ product, priority = false }: ProductCardPr
             <WishlistButton product={product} size="sm" />
           </div>
 
-          {hasSale && (
-            <div className="absolute top-3 right-3 sale-badge bg-[#6B2D3C] text-white text-[10px] px-3.5 py-1 rounded-full font-medium tracking-[1px]">
-              SALE
-            </div>
-          )}
+          <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+            {hasSale && (
+              <div className="sale-badge bg-[#6B2D3C] text-white text-[10px] px-3.5 py-1 rounded-full font-medium tracking-[1px]">
+                SALE
+              </div>
+            )}
+            <StockBadge inStock={product.inStock} />
+          </div>
 
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-all duration-300">
             <div className="opacity-0 group-hover:opacity-100 text-white text-xs tracking-[2px] font-medium bg-black/60 px-4 py-1.5 rounded-full transition flex items-center gap-1.5">

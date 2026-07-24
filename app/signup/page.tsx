@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/account";
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const email = searchParams.get("email");
+    if (email) setForm((prev) => ({ ...prev, email }));
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,7 @@ export default function SignupPage() {
     await signIn("credentials", { email: form.email, password: form.password, redirect: false });
     setLoading(false);
     toast.success("Welcome to BIYORA SHOP!");
-    router.push("/account");
+    router.push(callbackUrl);
   };
 
   return (
@@ -67,5 +74,13 @@ export default function SignupPage() {
         </p>
       </form>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="py-20 text-center text-[#6B5F54]">Loading…</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

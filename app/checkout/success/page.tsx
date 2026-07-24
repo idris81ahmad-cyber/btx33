@@ -3,7 +3,8 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, CheckCircle, Loader2, Mail, RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { AlertCircle, CheckCircle, Loader2, Mail, RefreshCw, UserPlus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { mapVerifyError } from "@/lib/checkout-errors";
 import ErrorBanner from "@/components/ErrorBanner";
@@ -23,6 +24,7 @@ interface Order {
 
 function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
+  const { data: session, status: sessionStatus } = useSession();
   // Paystack may send `reference` and/or `trxref`
   const reference =
     searchParams.get("reference") || searchParams.get("trxref");
@@ -200,12 +202,47 @@ function CheckoutSuccessContent() {
           </div>
         </div>
 
+        {/* Guest → account nudge */}
+        {sessionStatus !== "loading" && !session?.user && (
+          <div className="mb-8 rounded-2xl border border-[#C5A46E]/40 bg-gradient-to-br from-[#FBF8F3] to-white p-6 sm:p-7">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-[#6B2D3C]/10 flex items-center justify-center shrink-0">
+                <UserPlus className="w-5 h-5 text-[#6B2D3C]" aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-semibold text-lg tracking-tight text-[#2C2522]">
+                  Save this order &amp; track easily
+                </h2>
+                <p className="text-sm text-[#6B5F54] mt-1.5 leading-relaxed">
+                  Create a free account with <span className="font-medium text-[#2C2522]">{order.email}</span>{" "}
+                  to see delivery status, reorder fabrics, and download invoices anytime.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2.5 mt-4">
+                  <Link
+                    href={`/signup?email=${encodeURIComponent(order.email)}&callbackUrl=${encodeURIComponent("/account/orders")}`}
+                    className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-sm min-h-[48px]"
+                  >
+                    <UserPlus className="w-4 h-4" aria-hidden="true" />
+                    Create account
+                  </Link>
+                  <Link
+                    href={`/login?email=${encodeURIComponent(order.email)}&callbackUrl=${encodeURIComponent("/account/orders")}`}
+                    className="inline-flex items-center justify-center px-6 py-3 rounded-2xl border border-[#D4C9B8] text-sm font-medium min-h-[48px] hover:bg-white"
+                  >
+                    I already have an account
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/shop" className="btn-primary px-8 py-3 flex-1 sm:flex-none justify-center text-center">
             Continue Shopping
           </Link>
           <Link
-            href="/account/orders"
+            href={session?.user ? "/account/orders" : `/login?callbackUrl=${encodeURIComponent("/account/orders")}`}
             className="px-8 py-3 border border-[#D4C9B8] rounded-2xl hover:bg-white flex-1 sm:flex-none text-center min-h-[44px] inline-flex items-center justify-center"
           >
             Track delivery

@@ -12,6 +12,7 @@ import { cartItemToProduct } from "@/lib/cart-utils";
 import { useSession } from "next-auth/react";
 import { validateCoupon, type Coupon } from "@/lib/coupons";
 import FabricCalculatorCta from "@/components/FabricCalculatorCta";
+import StockBadge from "@/components/StockBadge";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCartStore();
@@ -155,7 +156,10 @@ export default function CartPage() {
                   <div className="flex justify-between">
                     <div>
                       <Link href={`/products/${item.slug}`} className="font-semibold text-xl tracking-tight hover:text-[#6B2D3C]">{item.name}</Link>
-                      <div className="text-sm text-[#6B5F54]">{item.selectedLength} • {item.category}</div>
+                      <div className="text-sm text-[#6B5F54] flex flex-wrap items-center gap-2 mt-0.5">
+                        <span>{item.selectedLength} • {item.category}</span>
+                        <StockBadge inStock={item.inStock} />
+                      </div>
                     </div>
                     <div className="text-right font-mono text-xl tabular-nums">₦{itemTotal.toLocaleString()}</div>
                   </div>
