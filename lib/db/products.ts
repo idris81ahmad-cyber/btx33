@@ -2,9 +2,10 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb, schema } from "./index";
 import type { Product } from "@/types/product";
 import { logger } from "@/lib/logger";
+import { hydrateProduct } from "@/lib/product-education";
 
 function rowToProduct(row: typeof schema.products.$inferSelect): Product {
-  return {
+  return hydrateProduct({
     id: row.id,
     slug: row.slug,
     name: row.name,
@@ -20,8 +21,8 @@ function rowToProduct(row: typeof schema.products.$inferSelect): Product {
     colorFamily: row.colorFamily,
     patternStyle: row.patternStyle,
     lengthOptions: row.lengthOptions,
-    specifications: row.specifications,
-  };
+    specifications: row.specifications || {},
+  });
 }
 
 export async function getProductsFromDb(): Promise<Product[] | null> {

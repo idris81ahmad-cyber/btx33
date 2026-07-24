@@ -1,21 +1,7 @@
-export interface Product {
-  id: number;
-  slug: string;
-  name: string;
-  category: string;
-  price: number;
-  salePrice?: number;
-  images: string[];
-  rating: number;
-  reviewCount: number;
-  shortDescription: string;
-  description: string;
-  inStock: number;
-  colorFamily: string;
-  patternStyle: string;
-  lengthOptions: string[];
-  specifications: Record<string, string>;
-}
+import type { Product } from "@/types/product";
+import { hydrateProduct } from "@/lib/product-education";
+
+export type { Product } from "@/types/product";
 
 export const fabricCategories = [
   "Ankara Prints",
@@ -38,7 +24,7 @@ export const colorFamilies = ["All Colors", "Gold", "Burgundy", "Indigo", "Ivory
 
 export const patternStyles = ["Floral", "Geometric", "Solid", "Abstract", "Tie-Dye"] as const;
 
-export const products: Product[] = [
+const rawProducts: Product[] = [
   {
     id: 1,
     slug: "royal-gold-ankara-wax-print",
@@ -58,11 +44,18 @@ export const products: Product[] = [
     colorFamily: "Gold",
     patternStyle: "Geometric",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["asoebi", "wrapper", "bridal", "everyday"],
+    opacity: "Opaque",
+    careInstructions:
+      "Hand-wash or gentle machine wash cold. Do not bleach. Iron on medium (reverse side). Air dry preferred.",
+    originStory:
+      "Selected from Kantin Kwari traders in Kano for dense wax coverage and gold that holds after washing — a BIYORA favourite for owambe season.",
     specifications: {
       "Material": "100% Cotton",
       "Width": "45 inches",
       "Weight": "Premium Heavy",
-      "Origin": "Kano, Nigeria"
+      "Origin": "Kano, Nigeria",
+      Opacity: "Opaque",
     }
   },
   {
@@ -83,11 +76,18 @@ export const products: Product[] = [
     colorFamily: "Ivory",
     patternStyle: "Floral",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["bridal", "asoebi", "evening", "gele"],
+    opacity: "Semi-sheer (lining recommended)",
+    careInstructions:
+      "Dry-clean preferred. Cold hand-wash only if needed. Lay flat to dry. Iron on low with a pressing cloth.",
+    originStory:
+      "Swiss-finished cord lace chosen for bridal and first-lady silhouettes — soft hand with enough structure for gele and trains.",
     specifications: {
       "Material": "Swiss Voile Cord",
       "Width": "50 inches",
       "Weight": "Lightweight Luxury",
-      "Origin": "Europe / Nigeria"
+      "Origin": "Europe / Nigeria",
+      Opacity: "Semi-sheer (lining recommended)",
     }
   },
   {
@@ -108,11 +108,18 @@ export const products: Product[] = [
     colorFamily: "Burgundy",
     patternStyle: "Geometric",
     lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    bestUses: ["agbada", "kaftan", "senator", "asoebi"],
+    opacity: "Opaque",
+    careInstructions:
+      "Dry-clean or cold hand-wash. Steam or iron on medium with cloth. Hang to dry — avoid wringing.",
+    originStory:
+      "Guinea-style brocade prized for its sheen under event lights — a Kwari classic for agbada and grand entrances.",
     specifications: {
       "Material": "Premium Brocade",
       "Width": "48 inches",
       "Weight": "Medium Weight",
-      "Origin": "Guinea"
+      "Origin": "Guinea",
+      Opacity: "Opaque",
     }
   },
   {
@@ -133,11 +140,18 @@ export const products: Product[] = [
     colorFamily: "Indigo",
     patternStyle: "Tie-Dye",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["everyday", "wrapper", "office", "asoebi"],
+    opacity: "Opaque",
+    careInstructions:
+      "First wash separately in cold water (colour may bleed). Mild detergent. Air dry in shade. Iron on reverse.",
+    originStory:
+      "Resist-dyed in the Yoruba tradition — each bolt carries slight pattern variation, a mark of handcraft not a flaw.",
     specifications: {
       "Material": "100% Cotton",
       "Width": "45 inches",
       "Weight": "Traditional Weight",
-      "Origin": "Yoruba Land"
+      "Origin": "Yoruba Land",
+      Opacity: "Opaque",
     }
   },
   {
@@ -158,11 +172,18 @@ export const products: Product[] = [
     colorFamily: "Champagne",
     patternStyle: "Floral",
     lengthOptions: ["5 yards"],
+    bestUses: ["bridal", "evening", "asoebi", "gele"],
+    opacity: "Semi-sheer (lining recommended)",
+    careInstructions:
+      "Dry-clean only recommended. Store flat or rolled. Press with cloth on low heat.",
+    originStory:
+      "French guipure with openwork that photographs beautifully — pair with soft lining for bridal comfort.",
     specifications: {
       "Material": "French Guipure Lace",
       "Width": "52 inches",
       "Weight": "Light Luxury",
-      "Origin": "France"
+      "Origin": "France",
+      Opacity: "Semi-sheer (lining recommended)",
     }
   },
   {
@@ -183,11 +204,18 @@ export const products: Product[] = [
     colorFamily: "Emerald",
     patternStyle: "Solid",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["gele", "evening", "bridal", "everyday"],
+    opacity: "Sheer (lining recommended)",
+    careInstructions:
+      "Cold hand-wash or dry-clean. Never wring. Dry flat or hang in shade. Cool iron if needed.",
+    originStory:
+      "Fluid chiffon for draping and layering — a favourite for gele and soft evening overlays.",
     specifications: {
       "Material": "Silk Chiffon",
       "Width": "44 inches",
       "Weight": "Lightweight",
-      "Origin": "India / Nigeria"
+      "Origin": "India / Nigeria",
+      Opacity: "Sheer (lining recommended)",
     }
   },
   {
@@ -207,11 +235,18 @@ export const products: Product[] = [
     colorFamily: "Ivory",
     patternStyle: "Solid",
     lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    bestUses: ["senator", "everyday", "office", "wrapper"],
+    opacity: "Opaque",
+    careInstructions:
+      "Machine wash cold. Tumble low or air dry. Iron medium-hot. Pre-wash before sewing for shrinkage.",
+    originStory:
+      "Everyday luxury cotton — the quiet workhorse for senator shirts, linings, and clean tailoring.",
     specifications: {
       "Material": "100% Cotton Poplin",
       "Width": "45 inches",
       "Weight": "Medium",
-      "Origin": "Nigeria"
+      "Origin": "Nigeria",
+      Opacity: "Opaque",
     }
   },
   {
@@ -232,11 +267,18 @@ export const products: Product[] = [
     colorFamily: "Royal Blue",
     patternStyle: "Floral",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["asoebi", "wrapper", "everyday", "office"],
+    opacity: "Opaque",
+    careInstructions:
+      "Hand-wash or gentle machine wash cold. Do not bleach. Iron medium reverse side.",
+    originStory:
+      "Kano market pick for saturated blues that read well in group photos — a reliable asoebi base.",
     specifications: {
       "Material": "100% Cotton",
       "Width": "45 inches",
       "Weight": "Premium Heavy",
-      "Origin": "Kano, Nigeria"
+      "Origin": "Kano, Nigeria",
+      Opacity: "Opaque",
     }
   },
   {
@@ -257,11 +299,18 @@ export const products: Product[] = [
     colorFamily: "Ivory",
     patternStyle: "Floral",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["bridal", "asoebi", "evening", "gele"],
+    opacity: "Semi-sheer (lining recommended)",
+    careInstructions:
+      "Dry-clean preferred. Protect gold threads from harsh heat. Store rolled with tissue.",
+    originStory:
+      "Gold-thread Swiss lace for celebrations that need light catch without heavy metallics.",
     specifications: {
       "Material": "Swiss Voile Lace with Gold Thread",
       "Width": "50 inches",
       "Weight": "Light Luxury",
-      "Origin": "Europe"
+      "Origin": "Europe",
+      Opacity: "Semi-sheer (lining recommended)",
     }
   },
   {
@@ -282,11 +331,18 @@ export const products: Product[] = [
     colorFamily: "Emerald",
     patternStyle: "Geometric",
     lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    bestUses: ["agbada", "kaftan", "senator"],
+    opacity: "Opaque",
+    careInstructions:
+      "Dry-clean recommended. Steam to refresh. Store folded with tissue to protect sheen.",
+    originStory:
+      "Damask shadda for structure — the fabric that holds an agbada shoulder with quiet authority.",
     specifications: {
       "Material": "Damask / Shadda",
       "Width": "48 inches",
       "Weight": "Medium-Heavy",
-      "Origin": "West Africa"
+      "Origin": "West Africa",
+      Opacity: "Opaque",
     }
   },
   {
@@ -307,11 +363,18 @@ export const products: Product[] = [
     colorFamily: "Gold",
     patternStyle: "Tie-Dye",
     lengthOptions: ["5 yards", "6 yards"],
+    bestUses: ["everyday", "asoebi", "wrapper", "office"],
+    opacity: "Opaque",
+    careInstructions:
+      "Wash cold separately the first times. Mild soap. Shade dry. Iron reverse side.",
+    originStory:
+      "Sunset Adire dyed in batches — embrace the uniqueness; no two lengths are identical.",
     specifications: {
       "Material": "100% Cotton",
       "Width": "45 inches",
       "Weight": "Traditional",
-      "Origin": "Yoruba Land"
+      "Origin": "Yoruba Land",
+      Opacity: "Opaque",
     }
   },
   {
@@ -332,11 +395,21 @@ export const products: Product[] = [
     colorFamily: "Ivory",
     patternStyle: "Solid",
     lengthOptions: ["5 yards", "6 yards", "10 yards"],
+    bestUses: ["gele", "everyday", "evening", "wrapper"],
+    opacity: "Semi-sheer (lining optional)",
+    careInstructions:
+      "Cold gentle wash. Hang dry. Cool iron. Soft hand improves after first wash.",
+    originStory:
+      "Blush voile for soft draping — ideal when you want colour without weight.",
     specifications: {
       "Material": "Premium Voile",
       "Width": "44 inches",
       "Weight": "Light",
-      "Origin": "Nigeria"
+      "Origin": "Nigeria",
+      Opacity: "Semi-sheer (lining optional)",
     }
   }
 ];
+
+/** Catalog with care, occasions, origin, and opacity fully hydrated */
+export const products: Product[] = rawProducts.map((p) => hydrateProduct(p));

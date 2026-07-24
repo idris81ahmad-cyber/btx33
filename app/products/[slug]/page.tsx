@@ -12,8 +12,11 @@ import WishlistButton from "@/components/WishlistButton";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { addToCartWithFeedback } from "@/lib/add-to-cart";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
-import { getSmartRelatedProducts } from "@/lib/related-products";
+import { getSmartRelatedProducts, relatedReason } from "@/lib/related-products";
+import { hydrateProduct } from "@/lib/product-education";
 import ProductReviews from "@/components/ProductReviews";
+import ProductEducation from "@/components/ProductEducation";
+import FabricCalculatorCta from "@/components/FabricCalculatorCta";
 import PageSkeleton from "@/components/PageSkeleton";
 
 interface ProductDetailPageProps {
@@ -37,9 +40,11 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             router.replace("/shop");
             return;
           }
-          setProduct(found);
-          addRecentlyViewed(found);
-          setRelatedProducts(getSmartRelatedProducts(found, list, 4));
+          const hydrated = hydrateProduct(found);
+          const catalog = list.map(hydrateProduct);
+          setProduct(hydrated);
+          addRecentlyViewed(hydrated);
+          setRelatedProducts(getSmartRelatedProducts(hydrated, catalog, 4));
           setLoading(false);
         })
         .catch(() => {
@@ -170,7 +175,15 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                 </button>
               ))}
             </div>
-            <p className="text-xs text-[#6B5F54] mt-2">Most popular: 6 yards for full traditional outfits</p>
+            <p className="text-xs text-[#6B5F54] mt-2">
+              Most popular: 6 yards for full traditional outfits.{" "}
+              <FabricCalculatorCta
+                productName={product.name}
+                category={product.category}
+                variant="compact"
+                className="inline-flex align-baseline"
+              />
+            </p>
           </div>
 
           <div className="flex items-center gap-4 mb-8">
@@ -199,34 +212,12 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
             <p>{product.description}</p>
           </div>
 
-          <div className="mb-10">
-            <div className="uppercase text-xs tracking-[2.5px] text-[#C5A46E] mb-4">SPECIFICATIONS</div>
-            <div className="border border-[#D4C9B8] rounded-3xl overflow-hidden text-sm">
-              {Object.entries(product.specifications).map(([key, value], idx) => (
-                <div key={idx} className="flex border-b last:border-b-0 border-[#D4C9B8] px-6 py-[17px] bg-white">
-                  <div className="w-44 text-[#6B5F54] shrink-0">{key}</div>
-                  <div className="font-medium text-[#2C2522]">{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProductEducation product={product} />
 
-          <div className="mb-12">
-            <div className="uppercase text-xs tracking-[2.5px] text-[#C5A46E] mb-4">HOW TO STYLE THIS FABRIC</div>
-            <div className="grid sm:grid-cols-2 gap-4 text-sm">
-              <div className="bg-white border border-[#D4C9B8] rounded-3xl p-6">
-                <div className="font-semibold mb-2">Traditional Look</div>
-                <p className="text-[#6B5F54]">Pair with matching gele and ipele for stunning Asoebi or owambe appearances.</p>
-              </div>
-              <div className="bg-white border border-[#D4C9B8] rounded-3xl p-6">
-                <div className="font-semibold mb-2">Modern Fusion</div>
-                <p className="text-[#6B5F54]">Create a sleek shirt dress, tailored pants, or a statement blazer for contemporary elegance.</p>
-              </div>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-[#6B5F54] mb-4">
+            <div className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">
+              IN STOCK • {product.inStock} pieces remaining
             </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-sm text-[#6B5F54]">
-            <div className="px-4 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium">IN STOCK • {product.inStock} yards remaining</div>
             <div>Free shipping on orders over ₦75,000</div>
           </div>
         </div>
@@ -291,17 +282,22 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
 
       {relatedProducts.length > 0 && (
         <div className="mt-12 pt-12 border-t border-[#D4C9B8]">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 gap-4">
             <div>
-              <div className="text-xs tracking-[2px] text-[#C5A46E]">CURATED PAIRINGS</div>
-              <h3 className="text-3xl tracking-tight font-semibold">Complements &amp; Similar Fabrics</h3>
+              <div className="text-xs tracking-[2px] text-[#C5A46E]">COMPLETE THE LOOK</div>
+              <h3 className="text-3xl tracking-tight font-semibold">Pairs well with</h3>
+              <p className="text-sm text-[#6B5F54] mt-1 max-w-lg">
+                Matched by colour family, occasion, and complementary categories — not random fills.
+              </p>
             </div>
-            <Link href="/shop" className="text-sm hover:underline">Browse more →</Link>
+            <Link href="/shop" className="text-sm hover:underline shrink-0">
+              Browse more →
+            </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {relatedProducts.map((related) => (
               <Link key={related.id} href={`/products/${related.slug}`} className="group block">
-                <div className="product-card bg-white rounded-3xl overflow-hidden border border-[#D4C9B8]">
+                <div className="product-card bg-white rounded-3xl overflow-hidden border border-[#D4C9B8] h-full">
                   <div className="relative aspect-[4/3] overflow-hidden">
                     <ProductImage
                       src={related.images[0]}
@@ -312,9 +308,14 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
                     />
                   </div>
                   <div className="p-4">
-                    <div className="text-xs text-[#C5A46E] tracking-wide">{related.category}</div>
-                    <div className="font-semibold tracking-tight mt-0.5">{related.name}</div>
-                    <div className="mt-1 text-sm font-medium tabular-nums">₦{(related.salePrice || related.price).toLocaleString()}</div>
+                    <div className="text-[10px] tracking-wide text-[#C5A46E] font-medium mb-1">
+                      {relatedReason(product, related)}
+                    </div>
+                    <div className="text-xs text-[#6B5F54] tracking-wide">{related.category}</div>
+                    <div className="font-semibold tracking-tight mt-0.5 line-clamp-2">{related.name}</div>
+                    <div className="mt-1 text-sm font-medium tabular-nums">
+                      ₦{(related.salePrice || related.price).toLocaleString()}
+                    </div>
                   </div>
                 </div>
               </Link>

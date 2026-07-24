@@ -11,6 +11,7 @@ import { useWishlistStore } from "@/lib/wishlist-store";
 import { cartItemToProduct } from "@/lib/cart-utils";
 import { useSession } from "next-auth/react";
 import { validateCoupon, type Coupon } from "@/lib/coupons";
+import FabricCalculatorCta from "@/components/FabricCalculatorCta";
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalPrice } = useCartStore();
@@ -210,6 +211,14 @@ export default function CartPage() {
               </div>
             );
           })}
+
+          <div className="mt-6">
+            <FabricCalculatorCta
+              variant="banner"
+              category={items[0]?.category}
+              productName={items.length === 1 ? items[0].name : undefined}
+            />
+          </div>
         </div>
 
         <div className="lg:col-span-5">

@@ -15,9 +15,20 @@ export interface Product {
   patternStyle: string;
   lengthOptions: string[];
   specifications: Record<string, string>;
-  // Optional fields for extended data
+  /** Optional legacy / display fields */
   material?: string;
   width?: string;
+  weight?: string;
+  /** Sheer / opaque — critical for lace & chiffon */
+  opacity?: string;
+  /** Wash & iron guidance */
+  careInstructions?: string;
+  /**
+   * Occasion tags: asoebi, bridal, everyday, agbada, kaftan, office, gele, evening, senator, wrapper
+   */
+  bestUses?: string[];
+  /** Short origin / artisan story */
+  originStory?: string;
 }
 
 export interface CartItem extends Product {
