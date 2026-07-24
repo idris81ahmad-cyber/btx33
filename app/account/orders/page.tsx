@@ -612,11 +612,11 @@ export default function OrderHistoryPage() {
                         <button
                           type="button"
                           onClick={() => reorder(order)}
-                          className="inline-flex items-center justify-center gap-2 min-h-[48px] rounded-2xl bg-[#6B2D3C] text-white text-sm font-medium shadow-md shadow-[#6B2D3C]/20 hover:bg-[#5a2532] active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
+                          className="sm:col-span-2 inline-flex items-center justify-center gap-2 min-h-[52px] rounded-2xl bg-[#6B2D3C] text-white text-sm font-semibold shadow-lg shadow-[#6B2D3C]/25 hover:bg-[#5a2532] active:scale-[0.98] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C5A46E]"
                           aria-label={`Reorder items from ${order.orderNumber}`}
                         >
                           <ShoppingBag className="w-4 h-4" aria-hidden="true" />
-                          Reorder
+                          Reorder these fabrics
                         </button>
                         <button
                           type="button"

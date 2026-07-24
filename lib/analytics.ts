@@ -4,7 +4,13 @@ export type AnalyticsOrder = {
   status?: string;
   total?: number;
   createdAt: string | Date;
-  items?: { name?: string; quantity?: number; lineTotal?: number }[];
+  couponCode?: string | null;
+  items?: {
+    name?: string;
+    quantity?: number;
+    lineTotal?: number;
+    category?: string;
+  }[];
 };
 
 export type SalesOverview = {
@@ -15,8 +21,14 @@ export type SalesOverview = {
   paidOrders: number;
   cancelledOrders: number;
   averageOrderValue: number;
+  revenue7d: number;
+  revenue30d: number;
+  orders7d: number;
+  orders30d: number;
   last7Days: { date: string; label: string; orders: number; revenue: number }[];
   topProducts: { name: string; quantity: number; revenue: number }[];
+  topCategories: { category: string; quantity: number; revenue: number }[];
+  couponPerformance: { code: string; orders: number; revenue: number }[];
 };
 
 function startOfDay(d: Date): Date {
@@ -41,7 +53,18 @@ export function computeSalesOverview(
   let paidOrders = 0;
   let cancelledOrders = 0;
   let paidRevenueForAov = 0;
+  let revenue7d = 0;
+  let revenue30d = 0;
+  let orders7d = 0;
+  let orders30d = 0;
   const productMap = new Map<string, { quantity: number; revenue: number }>();
+  const categoryMap = new Map<string, { quantity: number; revenue: number }>();
+  const couponMap = new Map<string, { orders: number; revenue: number }>();
+
+  const day7 = new Date(today);
+  day7.setDate(day7.getDate() - 6);
+  const day30 = new Date(today);
+  day30.setDate(day30.getDate() - 29);
 
   const last7: { date: string; label: string; orders: number; revenue: number }[] = [];
   for (let i = 6; i >= 0; i--) {
@@ -81,6 +104,14 @@ export function computeSalesOverview(
       ordersToday += 1;
       revenueToday += total;
     }
+    if (createdOk && created >= day7) {
+      orders7d += 1;
+      revenue7d += total;
+    }
+    if (createdOk && created >= day30) {
+      orders30d += 1;
+      revenue30d += total;
+    }
 
     if (createdOk) {
       const key = dayKey(startOfDay(created));
@@ -89,6 +120,15 @@ export function computeSalesOverview(
         last7[idx].orders += 1;
         last7[idx].revenue += total;
       }
+    }
+
+    const coupon = o.couponCode?.trim().toUpperCase();
+    if (coupon) {
+      const prev = couponMap.get(coupon) || { orders: 0, revenue: 0 };
+      couponMap.set(coupon, {
+        orders: prev.orders + 1,
+        revenue: prev.revenue + total,
+      });
     }
 
     for (const item of o.items || []) {
@@ -103,6 +143,12 @@ export function computeSalesOverview(
         quantity: prev.quantity + qty,
         revenue: prev.revenue + line,
       });
+      const cat = item.category || "Uncategorised";
+      const cprev = categoryMap.get(cat) || { quantity: 0, revenue: 0 };
+      categoryMap.set(cat, {
+        quantity: cprev.quantity + qty,
+        revenue: cprev.revenue + line,
+      });
     }
   }
 
@@ -110,6 +156,16 @@ export function computeSalesOverview(
     .map(([name, v]) => ({ name, ...v }))
     .sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue)
     .slice(0, 5);
+
+  const topCategories = Array.from(categoryMap.entries())
+    .map(([category, v]) => ({ category, ...v }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  const couponPerformance = Array.from(couponMap.entries())
+    .map(([code, v]) => ({ code, ...v }))
+    .sort((a, b) => b.orders - a.orders)
+    .slice(0, 8);
 
   return {
     totalRevenue,
@@ -120,7 +176,13 @@ export function computeSalesOverview(
     cancelledOrders,
     averageOrderValue:
       paidOrders > 0 ? Math.round(paidRevenueForAov / paidOrders) : 0,
+    revenue7d,
+    revenue30d,
+    orders7d,
+    orders30d,
     last7Days: last7,
     topProducts,
+    topCategories,
+    couponPerformance,
   };
 }

@@ -175,44 +175,70 @@ export async function sendOrderConfirmation(params: {
   }
 
   const trackUrl = `${siteBaseUrl()}/account/orders`;
+  const shopUrl = `${siteBaseUrl()}/shop`;
   const itemsHtml = params.items
     .map(
       (i) =>
         `<tr>
-          <td style="padding:8px 0;border-bottom:1px solid #EDE6D9">${escapeHtml(i.name)}<br/>
-            <span style="color:#6B5F54;font-size:13px">${escapeHtml(i.length)} × ${i.quantity}</span>
+          <td style="padding:12px 0;border-bottom:1px solid #EDE6D9;vertical-align:top">
+            <div style="font-weight:600">${escapeHtml(i.name)}</div>
+            <div style="color:#6B5F54;font-size:13px;margin-top:4px">${escapeHtml(i.length)} × ${i.quantity}</div>
           </td>
-          <td align="right" style="padding:8px 0;border-bottom:1px solid #EDE6D9">₦${i.lineTotal.toLocaleString()}</td>
+          <td align="right" style="padding:12px 0;border-bottom:1px solid #EDE6D9;vertical-align:top;white-space:nowrap">₦${i.lineTotal.toLocaleString()}</td>
         </tr>`,
     )
     .join("");
 
   const html = `
-    <div style="font-family:Georgia,serif;max-width:560px;margin:0 auto;color:#2C2522">
-      <div style="background:#6B2D3C;color:#fff;padding:24px;border-radius:16px 16px 0 0">
-        <h1 style="margin:0;font-size:24px">Thank you, ${escapeHtml(params.customerName)}!</h1>
-        <p style="margin:8px 0 0;opacity:0.9">Order <strong>${escapeHtml(params.orderNumber)}</strong> is confirmed.</p>
-      </div>
-      <div style="border:1px solid #D4C9B8;border-top:0;padding:24px;border-radius:0 0 16px 16px">
-        <h2 style="font-size:16px;color:#6B2D3C;margin:0 0 8px">Delivery address</h2>
-        <p style="margin:0 0 20px;color:#4A4038;line-height:1.6">${formatShippingAddress(params.shipping)}</p>
-        <h2 style="font-size:16px;color:#6B2D3C;margin:0 0 8px">Your fabrics</h2>
-        <table width="100%" style="margin:0 0 20px">${itemsHtml}</table>
-        <p style="margin:0;line-height:1.8">
-          Subtotal: ₦${params.subtotal.toLocaleString()}<br/>
-          Shipping: ₦${params.shippingFee.toLocaleString()}<br/>
-          ${params.discount > 0 ? `Discount: −₦${params.discount.toLocaleString()}<br/>` : ""}
-          <strong style="font-size:18px;color:#6B2D3C">Total paid: ₦${params.total.toLocaleString()}</strong>
-        </p>
-        <p style="margin:24px 0 0">
-          <a href="${trackUrl}" style="display:inline-block;background:#6B2D3C;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-size:14px">
-            Track your order
-          </a>
-        </p>
-        <p style="color:#6B5F54;font-size:14px;margin-top:24px;padding-top:16px;border-top:1px solid #EDE6D9">
-          We will notify you when your order ships. Questions? Reply to this email or WhatsApp us.<br/>
-          — ${escapeHtml(siteConfig.name)}
-        </p>
+    <div style="font-family:Georgia,'Times New Roman',serif;background:#F8F4EC;padding:24px 12px">
+      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #D4C9B8">
+        <div style="background:linear-gradient(135deg,#6B2D3C 0%,#4A1F2A 100%);color:#fff;padding:28px 28px 24px">
+          <div style="font-size:11px;letter-spacing:0.2em;opacity:0.85;margin-bottom:10px">BIYORA SHOP · KANTIN KWARI</div>
+          <h1 style="margin:0;font-size:26px;font-weight:600;line-height:1.2">Thank you, ${escapeHtml(params.customerName)}!</h1>
+          <p style="margin:10px 0 0;opacity:0.92;font-size:15px;line-height:1.5">
+            Your payment is confirmed. We’re preparing your fabrics with care.
+          </p>
+          <div style="margin-top:16px;display:inline-block;background:rgba(255,255,255,0.12);padding:8px 14px;border-radius:999px;font-size:13px">
+            Order <strong style="font-family:ui-monospace,monospace">${escapeHtml(params.orderNumber)}</strong>
+          </div>
+        </div>
+        <div style="padding:28px">
+          <div style="background:#FBF8F3;border:1px solid #E8DFD0;border-radius:14px;padding:14px 16px;margin-bottom:22px;font-size:13px;color:#4A4038;line-height:1.55">
+            <strong style="color:#6B2D3C">What happens next</strong><br/>
+            1. We inspect &amp; pack your order<br/>
+            2. You get a shipping email when it leaves us<br/>
+            3. Track progress anytime in your account
+          </div>
+          <h2 style="font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:#C5A46E;margin:0 0 8px">Deliver to</h2>
+          <p style="margin:0 0 22px;color:#4A4038;line-height:1.65;font-size:15px">${formatShippingAddress(params.shipping)}</p>
+          <h2 style="font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:#C5A46E;margin:0 0 8px">Your fabrics</h2>
+          <table width="100%" style="margin:0 0 20px;font-size:15px">${itemsHtml}</table>
+          <table width="100%" style="font-size:14px;color:#4A4038">
+            <tr><td style="padding:4px 0">Subtotal</td><td align="right">₦${params.subtotal.toLocaleString()}</td></tr>
+            <tr><td style="padding:4px 0">Shipping</td><td align="right">₦${params.shippingFee.toLocaleString()}</td></tr>
+            ${params.discount > 0 ? `<tr><td style="padding:4px 0">Discount</td><td align="right">−₦${params.discount.toLocaleString()}</td></tr>` : ""}
+            <tr><td style="padding:12px 0 0;font-size:18px;font-weight:700;color:#6B2D3C;border-top:2px solid #EDE6D9">Total paid</td>
+                <td align="right" style="padding:12px 0 0;font-size:18px;font-weight:700;color:#6B2D3C;border-top:2px solid #EDE6D9">₦${params.total.toLocaleString()}</td></tr>
+          </table>
+          <div style="margin:28px 0 8px;text-align:center">
+            <a href="${trackUrl}" style="display:inline-block;background:#6B2D3C;color:#fff;text-decoration:none;padding:14px 22px;border-radius:14px;font-size:14px;font-weight:600">
+              Track your order
+            </a>
+          </div>
+          <div style="margin-top:24px;padding:16px;border-radius:14px;background:#F8F4EC;border:1px dashed #D4C9B8;text-align:center">
+            <div style="font-size:12px;letter-spacing:0.14em;color:#C5A46E;margin-bottom:6px">A THANK YOU GIFT</div>
+            <div style="font-size:15px;color:#2C2522;line-height:1.5">
+              Use code <strong style="font-family:ui-monospace,monospace;color:#6B2D3C">THANKYOU5</strong> for
+              <strong> 5% off</strong> your next order (min ₦15,000).
+            </div>
+            <a href="${shopUrl}" style="display:inline-block;margin-top:12px;color:#6B2D3C;font-size:13px">Shop again →</a>
+          </div>
+          <p style="color:#6B5F54;font-size:13px;margin:24px 0 0;line-height:1.6;text-align:center">
+            Sourced from Kantin Kwari · Inspected before shipping · 7-day returns<br/>
+            Questions? Reply to this email or WhatsApp us.<br/>
+            — ${escapeHtml(siteConfig.name)}
+          </p>
+        </div>
       </div>
     </div>`;
 
@@ -222,6 +248,57 @@ export async function sendOrderConfirmation(params: {
     html,
     scope: "Order confirmation",
     meta: { orderNumber: params.orderNumber, to },
+  });
+}
+
+export async function sendShippingNotification(params: {
+  to: string;
+  orderNumber: string;
+  customerName: string;
+  trackingNumber?: string;
+  note?: string;
+}): Promise<EmailSendResult> {
+  const to = normalizeRecipient(params.to);
+  if (!isValidEmail(to)) {
+    return { ok: false, error: "invalid_recipient" };
+  }
+  const trackUrl = `${siteBaseUrl()}/account/orders`;
+  const tracking = params.trackingNumber?.trim();
+  const html = `
+    <div style="font-family:Georgia,serif;background:#F8F4EC;padding:24px 12px">
+      <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid #D4C9B8">
+        <div style="background:#6B2D3C;color:#fff;padding:28px">
+          <div style="font-size:11px;letter-spacing:0.2em;opacity:0.85">BIYORA SHOP</div>
+          <h1 style="margin:10px 0 0;font-size:24px">Your fabric is on the way</h1>
+          <p style="margin:10px 0 0;opacity:0.9;font-size:15px">
+            Hi ${escapeHtml(params.customerName)}, order
+            <strong style="font-family:ui-monospace,monospace">${escapeHtml(params.orderNumber)}</strong>
+            has been shipped.
+          </p>
+        </div>
+        <div style="padding:28px;color:#4A4038;font-size:15px;line-height:1.6">
+          ${
+            tracking
+              ? `<p style="margin:0 0 16px"><strong>Tracking number</strong><br/>
+                 <span style="font-family:ui-monospace,monospace;font-size:16px;color:#6B2D3C">${escapeHtml(tracking)}</span></p>`
+              : `<p style="margin:0 0 16px">Your parcel has left our workshop. We’ll keep your delivery timeline updated in your account.</p>`
+          }
+          ${params.note ? `<p style="margin:0 0 16px;color:#6B5F54">${escapeHtml(params.note)}</p>` : ""}
+          <p style="margin:0 0 20px">Typical windows: <strong>Kano &amp; Abuja 2–4 days</strong> · <strong>Lagos 3–6 days</strong> · other states 3–7 days.</p>
+          <a href="${trackUrl}" style="display:inline-block;background:#6B2D3C;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-size:14px">
+            Track delivery
+          </a>
+          <p style="color:#6B5F54;font-size:13px;margin:24px 0 0">— ${escapeHtml(siteConfig.name)}</p>
+        </div>
+      </div>
+    </div>`;
+
+  return sendWithRetry({
+    to,
+    subject: `Shipped — ${params.orderNumber} | BIYORA SHOP`,
+    html,
+    scope: "Shipping notification",
+    meta: { orderNumber: params.orderNumber, to, tracking: tracking || null },
   });
 }
 

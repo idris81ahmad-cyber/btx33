@@ -153,8 +153,14 @@ export default function ProductReviews({ productId, fallbackRating, fallbackCoun
             <p className="text-sm text-[#6B5F54]">
               Be the first to share how you wore this fabric — leave a review below after your order.
             </p>
+            <p className="text-xs text-[#A89B8A] mt-2">
+              Photo reviews of finished looks convert best for Nigerian shoppers — describe your outfit in detail for now.
+            </p>
           </div>
         )}
+        <p className="mt-4 text-xs text-center text-[#6B5F54]">
+          Tip: mention colour accuracy, how it sewed, and the occasion — photo review uploads are coming soon.
+        </p>
       </section>
 
       {loading ? (

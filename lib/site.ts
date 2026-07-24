@@ -8,6 +8,9 @@ export const siteConfig = {
   locale: "en_NG",
   email: "hello@biyorashop.com",
   location: "Kano, Nigeria",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "2349061811134",
+  returnPolicyDays: 7,
+  thankYouCoupon: "THANKYOU5",
 } as const;
 
 export function absoluteUrl(path = ""): string {

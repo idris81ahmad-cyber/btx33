@@ -4,6 +4,22 @@ import { requireAdmin } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { clientIp, rateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
+async function toWebpBuffer(file: File): Promise<{ buffer: Buffer; contentType: string; ext: string } | null> {
+  try {
+    // sharp is optional; Next also serves AVIF/WebP via image optimizer
+    const sharp = (await import("sharp")).default;
+    const input = Buffer.from(await file.arrayBuffer());
+    const buffer = await sharp(input)
+      .rotate()
+      .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
+    return { buffer, contentType: "image/webp", ext: "webp" };
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await requireAdmin();
   if (!session) {
@@ -55,16 +71,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-") || "upload.jpg";
-    const pathname = `btx3/products/${Date.now()}-${safeName}`;
+    const converted = await toWebpBuffer(file);
+    const safeBase =
+      file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9._-]/g, "-") || "upload";
 
-    const blob = await put(pathname, file, {
+    let body: Buffer | File;
+    let contentType: string;
+    let ext: string;
+
+    if (converted) {
+      body = converted.buffer;
+      contentType = converted.contentType;
+      ext = converted.ext;
+    } else {
+      body = file;
+      contentType = file.type || "image/jpeg";
+      const originalExt = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+      ext = originalExt || "jpg";
+    }
+
+    const pathname = `btx3/products/${Date.now()}-${safeBase}.${ext}`;
+
+    const blob = await put(pathname, body, {
       access: "public",
       addRandomSuffix: false,
-      contentType: file.type,
+      contentType,
     });
 
-    return NextResponse.json({ url: blob.url }, { status: 201 });
+    return NextResponse.json(
+      {
+        url: blob.url,
+        contentType,
+        convertedToWebp: Boolean(converted),
+      },
+      { status: 201 },
+    );
   } catch (error) {
     logger.error("admin-upload", "Image upload failed", {
       error: error instanceof Error ? error.message : String(error),

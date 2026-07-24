@@ -330,6 +330,8 @@ export default function AdminDashboard() {
   const avgRating = totalProducts > 0
     ? (products.reduce((s, p) => s + p.rating, 0) / totalProducts).toFixed(1)
     : "0";
+  const lowStockProducts = products.filter((p) => p.inStock > 0 && p.inStock <= 10);
+  const outOfStockProducts = products.filter((p) => p.inStock <= 0);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
@@ -439,6 +441,43 @@ export default function AdminDashboard() {
 
       {activeTab === "products" && (
         <>
+          {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+            <div
+              className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950"
+              role="status"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <strong className="font-semibold">Stock alerts</strong>
+                  <p className="mt-1 text-amber-900/90">
+                    {outOfStockProducts.length > 0 && (
+                      <span>
+                        {outOfStockProducts.length} out of stock
+                        {lowStockProducts.length > 0 ? " · " : ""}
+                      </span>
+                    )}
+                    {lowStockProducts.length > 0 && (
+                      <span>{lowStockProducts.length} low stock (≤10 units)</span>
+                    )}
+                  </p>
+                  <ul className="mt-2 space-y-0.5 text-xs text-amber-900/80 max-h-24 overflow-y-auto">
+                    {[...outOfStockProducts, ...lowStockProducts].slice(0, 8).map((p) => (
+                      <li key={p.id}>
+                        {p.name} —{" "}
+                        <span className="font-mono tabular-nums">
+                          {p.inStock <= 0 ? "0 (restock)" : `${p.inStock} left`}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-amber-200/80 px-3 py-1 text-xs font-semibold tabular-nums">
+                  {lowStockProducts.length + outOfStockProducts.length} need attention
+                </span>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
               <div className="text-sm text-[#6B5F54]">Total Fabrics</div>
@@ -448,13 +487,24 @@ export default function AdminDashboard() {
               <div className="text-sm text-[#6B5F54]">Units in Stock</div>
               <div className="text-4xl font-semibold mt-1 tracking-tight">{totalStock}</div>
             </div>
+            <div
+              className={`rounded-2xl p-6 border ${
+                lowStockProducts.length > 0
+                  ? "bg-amber-50 border-amber-300"
+                  : "bg-white border-[#D4C9B8]"
+              }`}
+            >
+              <div className="text-sm text-[#6B5F54]">Low stock</div>
+              <div className="text-4xl font-semibold mt-1 tracking-tight tabular-nums">
+                {lowStockProducts.length}
+              </div>
+              <div className="text-[10px] text-[#6B5F54] mt-1">
+                {outOfStockProducts.length} out of stock
+              </div>
+            </div>
             <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
               <div className="text-sm text-[#6B5F54]">Avg Rating</div>
               <div className="text-4xl font-semibold mt-1 tracking-tight">{avgRating}</div>
-            </div>
-            <div className="bg-white border border-[#D4C9B8] rounded-2xl p-6">
-              <div className="text-sm text-[#6B5F54]">Categories</div>
-              <div className="text-4xl font-semibold mt-1 tracking-tight">8</div>
             </div>
           </div>
 
@@ -539,7 +589,9 @@ export default function AdminDashboard() {
                   <div className="flex flex-col items-center justify-center gap-2">
                     <div className="text-4xl mb-1">📁</div>
                     <p className="text-sm font-medium text-[#6B5F54]">Click to browse or drag &amp; drop images</p>
-                    <p className="text-[10px] text-[#6B5F54]">Supports JPG, PNG, WebP • Max 5MB per file</p>
+                    <p className="text-[10px] text-[#6B5F54]">
+                      Bulk JPG/PNG/WebP · auto-converted to WebP · max 8MB each
+                    </p>
                   </div>
 
                   {/* Hidden file input */}

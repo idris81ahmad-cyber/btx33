@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import {
   getAllOrders,
+  getOrderByNumber,
+  updateOrderMeta,
   updateOrderStatus,
   updateOrdersStatus,
 } from "@/lib/db/orders";
 import { hasDatabase } from "@/lib/db";
 import { isValidOrderStatus } from "@/lib/order-status";
+import { sendShippingNotification } from "@/lib/email";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   const session = await requireAdmin();
@@ -35,7 +39,26 @@ export async function PATCH(req: Request) {
     orderNumber?: string;
     orderNumbers?: string[];
     status?: string;
+    trackingNumber?: string;
+    adminNotes?: string;
+    sendShippingEmail?: boolean;
   };
+
+  // Meta-only update (notes / tracking without status)
+  if (
+    body.orderNumber &&
+    !body.status &&
+    (body.trackingNumber !== undefined || body.adminNotes !== undefined)
+  ) {
+    const ok = await updateOrderMeta(body.orderNumber.trim(), {
+      trackingNumber: body.trackingNumber,
+      adminNotes: body.adminNotes,
+    });
+    if (!ok) {
+      return NextResponse.json({ error: "Order not found or update failed" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, orderNumber: body.orderNumber });
+  }
 
   const { status } = body;
   if (!status || !isValidOrderStatus(status)) {
@@ -55,15 +78,11 @@ export async function PATCH(req: Request) {
     }
     const count = await updateOrdersStatus(numbers, status);
     if (!count) {
-      return NextResponse.json(
-        { error: "Bulk update failed" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Bulk update failed" }, { status: 500 });
     }
     return NextResponse.json({ ok: true, count, status, orderNumbers: numbers });
   }
 
-  // Single update
   const orderNumber = body.orderNumber?.trim();
   if (!orderNumber) {
     return NextResponse.json(
@@ -72,7 +91,15 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const ok = await updateOrderStatus(orderNumber, status);
+  const ok = await updateOrderStatus(orderNumber, status, {
+    actor: session.user?.email || "admin",
+    trackingNumber: body.trackingNumber,
+    adminNotes: body.adminNotes,
+    note:
+      status === "shipped" && body.trackingNumber
+        ? `Shipped · tracking ${body.trackingNumber}`
+        : undefined,
+  });
   if (!ok) {
     return NextResponse.json(
       { error: "Order not found or update failed" },
@@ -80,5 +107,25 @@ export async function PATCH(req: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, orderNumber, status });
+  let emailSent = false;
+  if (status === "shipped" && body.sendShippingEmail !== false) {
+    const order = await getOrderByNumber(orderNumber);
+    if (order) {
+      const result = await sendShippingNotification({
+        to: order.email,
+        orderNumber: order.orderNumber,
+        customerName: order.fullName,
+        trackingNumber: body.trackingNumber || order.trackingNumber || undefined,
+      });
+      emailSent = result.ok;
+      if (!result.ok) {
+        logger.warn("admin-orders", "Shipping email failed", {
+          orderNumber,
+          error: result.error,
+        });
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, orderNumber, status, emailSent });
 }

@@ -53,7 +53,18 @@ export default function OrderDeliveryTimeline({
   const step = deliveryStepIndex(status); // 1..4 for pipeline
 
   return (
-    <div className="space-y-3" aria-label="Delivery progress">
+    <div
+      className="space-y-4 rounded-2xl border border-[#F0E9DC] bg-gradient-to-b from-white to-[#FBF8F3]/80 p-4 sm:p-5"
+      aria-label="Delivery progress"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] tracking-[0.2em] uppercase text-[#C5A46E] font-medium">
+          Delivery timeline
+        </p>
+        <p className="text-[11px] font-semibold text-[#6B2D3C]">
+          {orderStatusLabel(status)}
+        </p>
+      </div>
       <ol className="flex items-start gap-0 w-full">
         {DELIVERY_PIPELINE.map((s, i) => {
           const pipelineStep = i + 1;
@@ -66,17 +77,18 @@ export default function OrderDeliveryTimeline({
               {i > 0 && (
                 <span
                   className={cn(
-                    "absolute top-3 right-1/2 w-full h-0.5 -translate-y-1/2",
-                    step > i ? "bg-[#6B2D3C]" : "bg-[#EDE6D9]",
+                    "absolute top-3.5 right-1/2 w-full h-[3px] -translate-y-1/2 rounded-full",
+                    step > i ? "bg-gradient-to-r from-[#6B2D3C] to-[#C5A46E]" : "bg-[#EDE6D9]",
                   )}
                   aria-hidden="true"
                 />
               )}
               <span
                 className={cn(
-                  "relative z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] font-bold",
+                  "relative z-10 w-7 h-7 rounded-full border-2 flex items-center justify-center text-[10px] font-bold shadow-sm",
                   done && "bg-[#6B2D3C] border-[#6B2D3C] text-white",
-                  current && "bg-white border-[#6B2D3C] text-[#6B2D3C] ring-2 ring-[#C5A46E]/40",
+                  current &&
+                    "bg-white border-[#6B2D3C] text-[#6B2D3C] ring-4 ring-[#C5A46E]/25 scale-110",
                   upcoming && "bg-white border-[#D4C9B8] text-[#A89B8A]",
                 )}
                 aria-current={current ? "step" : undefined}
@@ -85,7 +97,7 @@ export default function OrderDeliveryTimeline({
               </span>
               <span
                 className={cn(
-                  "mt-2 text-[10px] sm:text-xs text-center leading-tight px-0.5",
+                  "mt-2.5 text-[10px] sm:text-xs text-center leading-tight px-0.5",
                   current ? "text-[#6B2D3C] font-semibold" : "text-[#6B5F54]",
                 )}
               >
@@ -95,7 +107,9 @@ export default function OrderDeliveryTimeline({
           );
         })}
       </ol>
-      <p className="text-xs text-[#6B5F54] leading-relaxed">{orderStatusHelp(status)}</p>
+      <p className="text-xs text-[#6B5F54] leading-relaxed bg-white/70 rounded-xl px-3 py-2 border border-[#F0E9DC]">
+        {orderStatusHelp(status)}
+      </p>
 
       {history && history.length > 0 && (
         <div className="mt-3 pt-3 border-t border-[#EDE6D9]">

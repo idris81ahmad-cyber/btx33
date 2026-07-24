@@ -4,11 +4,12 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { AlertCircle, CheckCircle, Loader2, Mail, RefreshCw, UserPlus } from "lucide-react";
+import { AlertCircle, CheckCircle, Gift, Loader2, Mail, RefreshCw, UserPlus } from "lucide-react";
 import { useCartStore } from "@/lib/cart-store";
 import { mapVerifyError } from "@/lib/checkout-errors";
 import ErrorBanner from "@/components/ErrorBanner";
 import type { OrderItemJson, ShippingJson } from "@/lib/db/schema";
+import { siteConfig } from "@/lib/site";
 
 interface Order {
   id: number;
@@ -199,6 +200,36 @@ function CheckoutSuccessContent() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Thank-you coupon */}
+        <div className="mb-8 rounded-2xl border border-dashed border-[#C5A46E]/60 bg-gradient-to-br from-[#FBF8F3] to-white p-6 sm:p-7">
+          <div className="flex items-start gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#C5A46E]/15 flex items-center justify-center shrink-0">
+              <Gift className="w-5 h-5 text-[#6B2D3C]" aria-hidden="true" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] tracking-[0.2em] text-[#C5A46E] font-medium mb-1">
+                A THANK YOU GIFT
+              </p>
+              <h2 className="font-semibold text-lg tracking-tight text-[#2C2522]">
+                5% off your next order
+              </h2>
+              <p className="text-sm text-[#6B5F54] mt-1.5 leading-relaxed">
+                Use code{" "}
+                <span className="font-mono font-semibold text-[#6B2D3C]">
+                  {siteConfig.thankYouCoupon}
+                </span>{" "}
+                at checkout (min ₦15,000). We&apos;ll also include it in your confirmation email.
+              </p>
+              <Link
+                href="/shop"
+                className="inline-flex mt-3 text-sm font-medium text-[#6B2D3C] underline underline-offset-4"
+              >
+                Browse fabrics for next time →
+              </Link>
+            </div>
           </div>
         </div>
 

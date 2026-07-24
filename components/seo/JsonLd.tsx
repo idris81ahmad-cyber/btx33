@@ -49,29 +49,72 @@ export function OrganizationJsonLd() {
 
 export function ProductJsonLd({ product, url }: { product: Product; url: string }) {
   const price = product.salePrice ?? product.price;
-  const data = {
+  const data: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.shortDescription,
+    description: product.shortDescription || product.description,
     image: product.images.map((img) => (img.startsWith("http") ? img : absoluteUrl(img))),
     sku: `BIYORA-${product.id}`,
+    mpn: product.slug,
     brand: { "@type": "Brand", name: siteConfig.name },
     category: product.category,
+    material: product.specifications?.Material || product.material,
+    color: product.colorFamily,
     offers: {
       "@type": "Offer",
       url,
       priceCurrency: "NGN",
       price,
-      availability: product.inStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      priceValidUntil: new Date(Date.now() + 1000 * 60 * 60 * 24 * 90)
+        .toISOString()
+        .slice(0, 10),
+      itemCondition: "https://schema.org/NewCondition",
+      availability:
+        product.inStock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
       seller: { "@type": "Organization", name: siteConfig.name },
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount,
+      shippingDetails: {
+        "@type": "OfferShippingDetails",
+        shippingDestination: {
+          "@type": "DefinedRegion",
+          addressCountry: "NG",
+        },
+        deliveryTime: {
+          "@type": "ShippingDeliveryTime",
+          handlingTime: {
+            "@type": "QuantitativeValue",
+            minValue: 1,
+            maxValue: 2,
+            unitCode: "d",
+          },
+          transitTime: {
+            "@type": "QuantitativeValue",
+            minValue: 2,
+            maxValue: 7,
+            unitCode: "d",
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        "@type": "MerchantReturnPolicy",
+        applicableCountry: "NG",
+        returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+        merchantReturnDays: siteConfig.returnPolicyDays,
+        returnMethod: "https://schema.org/ReturnByMail",
+      },
     },
   };
+  if (product.reviewCount > 0 && product.rating > 0) {
+    data.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: product.rating,
+      reviewCount: Math.max(1, product.reviewCount),
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
 
   return (
     <script

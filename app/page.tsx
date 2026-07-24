@@ -1,21 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Award, Truck, ShieldCheck, RefreshCw } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import ProductCard from "@/components/ProductCard";
 import type { Product } from "@/types/product";
 import { fabricCategories, categoryShopHref } from "@/lib/products";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import ProductGridSkeleton from "@/components/ProductGridSkeleton";
+import { TrustBar, TrustGrid } from "@/components/TrustSignals";
 import { useEffect, useMemo, useState } from "react";
-
-const trustSignals = [
-  { icon: Award, title: "Curated Quality", desc: "Hand-selected from the best of Kantin Kwari" },
-  { icon: Truck, title: "Fast Delivery", desc: "Nationwide shipping in 2-5 business days" },
-  { icon: ShieldCheck, title: "Quality Guaranteed", desc: "Every fabric inspected before dispatch" },
-  { icon: RefreshCw, title: "Easy Returns", desc: "7-day hassle-free returns on all orders" },
-];
 
 export default function Home() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -75,10 +69,10 @@ export default function Home() {
               <ArrowRight className="group-hover:translate-x-1 transition" />
             </Link>
             <Link 
-              href="/about" 
+              href="/sourcing" 
               className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-lg font-medium border border-white/40 hover:bg-white/5 transition"
             >
-              Our Story
+              Our Sourcing
             </Link>
           </div>
           
@@ -89,15 +83,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <div className="border-b border-[#D4C9B8] bg-white/60 py-5">
-        <div className="max-w-6xl mx-auto px-6 flex flex-wrap justify-center gap-x-12 gap-y-3 text-sm text-[#6B5F54]">
-          <div className="flex items-center gap-2"><Award className="w-4 h-4" /> Authentic Kwari Quality</div>
-          <div className="flex items-center gap-2"><Truck className="w-4 h-4" /> 2-5 Day Nationwide Delivery</div>
-          <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Premium Inspection</div>
-          <div className="flex items-center gap-2"><RefreshCw className="w-4 h-4" /> 7-Day Easy Returns</div>
-        </div>
-      </div>
+      <TrustBar />
 
       {/* Featured Fabrics */}
       <section className="max-w-7xl mx-auto px-6 pt-16 pb-12">
@@ -165,20 +151,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trust Signals */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <div className="grid md:grid-cols-4 gap-6">
-          {trustSignals.map((signal, index) => (
-            <div key={index} className="trust-card bg-white border border-[#D4C9B8] rounded-3xl p-8 text-center group">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-[#F8F4EC] flex items-center justify-center mb-6 group-hover:bg-[#6B2D3C] transition-colors">
-                <signal.icon className="w-7 h-7 text-[#6B2D3C] group-hover:text-white transition-colors" />
-              </div>
-              <div className="font-semibold text-xl tracking-tight mb-2">{signal.title}</div>
-              <p className="text-[#6B5F54] text-[15px] leading-snug">{signal.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <TrustGrid />
 
       {/* Recently viewed */}
       <section className="max-w-7xl mx-auto px-6 pb-8">

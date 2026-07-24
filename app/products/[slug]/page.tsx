@@ -18,6 +18,8 @@ import ProductReviews from "@/components/ProductReviews";
 import ProductEducation from "@/components/ProductEducation";
 import FabricCalculatorCta from "@/components/FabricCalculatorCta";
 import StockBadge from "@/components/StockBadge";
+import ShareFabric from "@/components/ShareFabric";
+import { ProductTrustStrip, PaymentBadges } from "@/components/TrustSignals";
 import PageSkeleton from "@/components/PageSkeleton";
 
 interface ProductDetailPageProps {
@@ -221,6 +223,12 @@ function ProductDetailClient({ product, relatedProducts }: { product: Product; r
               <span className="text-xs">Act soon if this is your colour — popular pieces move fast.</span>
             )}
             <div className="text-xs">Free shipping on orders over ₦75,000</div>
+          </div>
+
+          <ProductTrustStrip className="mb-4" />
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+            <PaymentBadges />
+            <ShareFabric name={product.name} slug={product.slug} />
           </div>
         </div>
       </div>

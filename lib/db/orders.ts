@@ -206,27 +206,85 @@ export async function linkOrdersToUser(userId: number, email: string) {
 export async function updateOrderStatus(
   orderNumber: string,
   status: typeof schema.orderStatusEnum.enumValues[number],
-  opts?: { actor?: string; note?: string },
+  opts?: {
+    actor?: string;
+    note?: string;
+    trackingNumber?: string | null;
+    adminNotes?: string | null;
+  },
 ) {
   const db = getDb();
   if (!db) return false;
   try {
     const existing = await getOrderByNumber(orderNumber);
     if (!existing) return false;
-    if (existing.status === status) return true;
+
+    const patch: {
+      status?: typeof schema.orderStatusEnum.enumValues[number];
+      trackingNumber?: string | null;
+      adminNotes?: string | null;
+    } = {};
+
+    if (existing.status !== status) patch.status = status;
+    if (opts?.trackingNumber !== undefined) {
+      patch.trackingNumber = opts.trackingNumber?.trim() || null;
+    }
+    if (opts?.adminNotes !== undefined) {
+      patch.adminNotes = opts.adminNotes?.trim() || null;
+    }
+
+    if (Object.keys(patch).length === 0) return true;
 
     await db
       .update(schema.orders)
-      .set({ status })
+      .set(patch)
       .where(eq(schema.orders.orderNumber, orderNumber));
 
-    await appendOrderStatusHistory({
-      orderNumber,
-      fromStatus: existing.status,
-      toStatus: status,
-      note: opts?.note ?? "Status updated",
-      actor: opts?.actor ?? "admin",
-    });
+    if (patch.status) {
+      const historyNote =
+        opts?.note ||
+        (opts?.trackingNumber
+          ? `Status updated · tracking ${opts.trackingNumber}`
+          : "Status updated");
+      try {
+        await appendOrderStatusHistory({
+          orderNumber,
+          fromStatus: existing.status,
+          toStatus: status,
+          note: historyNote,
+          actor: opts?.actor ?? "admin",
+        });
+      } catch {
+        /* history optional */
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Patch tracking / admin notes without forcing a status change */
+export async function updateOrderMeta(
+  orderNumber: string,
+  meta: { trackingNumber?: string | null; adminNotes?: string | null },
+) {
+  const db = getDb();
+  if (!db) return false;
+  try {
+    const existing = await getOrderByNumber(orderNumber);
+    if (!existing) return false;
+    await db
+      .update(schema.orders)
+      .set({
+        ...(meta.trackingNumber !== undefined
+          ? { trackingNumber: meta.trackingNumber?.trim() || null }
+          : {}),
+        ...(meta.adminNotes !== undefined
+          ? { adminNotes: meta.adminNotes?.trim() || null }
+          : {}),
+      })
+      .where(eq(schema.orders.orderNumber, orderNumber));
     return true;
   } catch {
     return false;

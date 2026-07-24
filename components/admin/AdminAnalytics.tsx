@@ -64,23 +64,19 @@ export default function AdminAnalytics() {
           hint="All non-cancelled orders"
         />
         <StatCard
-          label="Orders today"
-          value={String(stats.ordersToday)}
-          hint={`₦${stats.revenueToday.toLocaleString()} today`}
+          label="Last 7 days"
+          value={`₦${stats.revenue7d.toLocaleString()}`}
+          hint={`${stats.orders7d} orders`}
+        />
+        <StatCard
+          label="Last 30 days"
+          value={`₦${stats.revenue30d.toLocaleString()}`}
+          hint={`${stats.orders30d} orders`}
         />
         <StatCard
           label="Average order"
           value={`₦${stats.averageOrderValue.toLocaleString()}`}
-          hint={`${stats.paidOrders} paid orders`}
-        />
-        <StatCard
-          label="Open pipeline"
-          value={String(stats.openOrders)}
-          hint={
-            stats.cancelledOrders > 0
-              ? `${stats.cancelledOrders} cancelled (excluded)`
-              : "Pending / confirmed / processing"
-          }
+          hint={`${stats.paidOrders} paid · ${stats.openOrders} open · today ${stats.ordersToday}`}
         />
       </div>
 
@@ -113,24 +109,69 @@ export default function AdminAnalytics() {
         </div>
       </div>
 
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white border border-[#D4C9B8] rounded-2xl p-4 md:p-5">
+          <h3 className="font-semibold text-sm mb-3">Top products</h3>
+          {stats.topProducts.length === 0 ? (
+            <p className="text-sm text-[#6B5F54]">No order line items yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {stats.topProducts.map((p, i) => (
+                <li
+                  key={p.name}
+                  className="flex items-center justify-between gap-3 text-sm border-b border-[#EDE6D9] last:border-0 pb-2 last:pb-0"
+                >
+                  <span className="min-w-0 truncate">
+                    <span className="text-[#6B5F54] mr-2 tabular-nums">{i + 1}.</span>
+                    {p.name}
+                  </span>
+                  <span className="shrink-0 text-[#6B5F54] tabular-nums">
+                    {p.quantity} · ₦{p.revenue.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="bg-white border border-[#D4C9B8] rounded-2xl p-4 md:p-5">
+          <h3 className="font-semibold text-sm mb-3">Top categories</h3>
+          {stats.topCategories.length === 0 ? (
+            <p className="text-sm text-[#6B5F54]">No category data yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {stats.topCategories.map((c, i) => (
+                <li
+                  key={c.category}
+                  className="flex items-center justify-between gap-3 text-sm border-b border-[#EDE6D9] last:border-0 pb-2 last:pb-0"
+                >
+                  <span className="min-w-0 truncate">
+                    <span className="text-[#6B5F54] mr-2 tabular-nums">{i + 1}.</span>
+                    {c.category}
+                  </span>
+                  <span className="shrink-0 text-[#6B5F54] tabular-nums">
+                    ₦{c.revenue.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
       <div className="bg-white border border-[#D4C9B8] rounded-2xl p-4 md:p-5">
-        <h3 className="font-semibold text-sm mb-3">Top products (by quantity sold)</h3>
-        {stats.topProducts.length === 0 ? (
-          <p className="text-sm text-[#6B5F54]">No order line items yet.</p>
+        <h3 className="font-semibold text-sm mb-3">Coupon performance</h3>
+        {stats.couponPerformance.length === 0 ? (
+          <p className="text-sm text-[#6B5F54]">No coupon redemptions yet.</p>
         ) : (
           <ul className="space-y-2">
-            {stats.topProducts.map((p, i) => (
+            {stats.couponPerformance.map((c) => (
               <li
-                key={p.name}
+                key={c.code}
                 className="flex items-center justify-between gap-3 text-sm border-b border-[#EDE6D9] last:border-0 pb-2 last:pb-0"
               >
-                <span className="min-w-0 truncate">
-                  <span className="text-[#6B5F54] mr-2 tabular-nums">{i + 1}.</span>
-                  {p.name}
-                </span>
-                <span className="shrink-0 text-[#6B5F54] tabular-nums">
-                  {p.quantity} sold
-                  {p.revenue > 0 ? ` · ₦${p.revenue.toLocaleString()}` : ""}
+                <span className="font-mono font-medium">{c.code}</span>
+                <span className="text-[#6B5F54] tabular-nums">
+                  {c.orders} orders · ₦{c.revenue.toLocaleString()}
                 </span>
               </li>
             ))}

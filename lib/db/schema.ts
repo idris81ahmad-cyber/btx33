@@ -67,6 +67,10 @@ export const orders = pgTable("orders", {
   total: integer("total").notNull(),
   paymentMethod: text("payment_method").notNull(),
   notes: text("notes"),
+  /** Courier / waybill number shown to customers when shipped */
+  trackingNumber: text("tracking_number"),
+  /** Internal ops notes — not shown on storefront */
+  adminNotes: text("admin_notes"),
   couponCode: text("coupon_code"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

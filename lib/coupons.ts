@@ -10,6 +10,8 @@ const COUPONS: Coupon[] = [
   { code: "KWARI10", label: "10% off Kwari welcome", type: "percent", value: 10, minSubtotal: 25_000 },
   { code: "BIYORA5000", label: "₦5,000 off orders over ₦50,000", type: "fixed", value: 5_000, minSubtotal: 50_000 },
   { code: "FABRIC15", label: "15% off premium fabrics", type: "percent", value: 15, minSubtotal: 75_000 },
+  /** Post-purchase thank-you — soft loyalty without a full points system */
+  { code: "THANKYOU5", label: "5% off your next order (thank you)", type: "percent", value: 5, minSubtotal: 15_000 },
 ];
 
 export function listPublicCoupons(): Pick<Coupon, "code" | "label" | "minSubtotal">[] {

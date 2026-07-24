@@ -19,11 +19,15 @@ export interface AdminOrder {
   status: string;
   createdAt: string;
   shipping?: ShippingJson;
+  trackingNumber?: string | null;
+  adminNotes?: string | null;
+  couponCode?: string | null;
   items: {
     name: string;
     quantity: number;
     selectedLength?: string;
     lineTotal?: number;
+    category?: string;
   }[];
 }
 
@@ -71,6 +75,12 @@ export default function OrderManager() {
 
   // Expanded row
   const [expanded, setExpanded] = useState<string | null>(null);
+
+  // Ship modal
+  const [shipOrder, setShipOrder] = useState<AdminOrder | null>(null);
+  const [shipTracking, setShipTracking] = useState("");
+  const [shipNotes, setShipNotes] = useState("");
+  const [shippingBusy, setShippingBusy] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -162,7 +172,11 @@ export default function OrderManager() {
     closeConfirm();
   };
 
-  const applyStatusUpdate = async (orderNumbers: string[], status: string) => {
+  const applyStatusUpdate = async (
+    orderNumbers: string[],
+    status: string,
+    extra?: { trackingNumber?: string; adminNotes?: string; sendShippingEmail?: boolean },
+  ) => {
     if (!isValidOrderStatus(status) || orderNumbers.length === 0) return;
 
     setUpdatingIds((prev) => Array.from(new Set([...prev, ...orderNumbers])));
@@ -173,7 +187,13 @@ export default function OrderManager() {
         credentials: "include",
         body: JSON.stringify(
           orderNumbers.length === 1
-            ? { orderNumber: orderNumbers[0], status }
+            ? {
+                orderNumber: orderNumbers[0],
+                status,
+                trackingNumber: extra?.trackingNumber,
+                adminNotes: extra?.adminNotes,
+                sendShippingEmail: extra?.sendShippingEmail,
+              }
             : { orderNumbers, status },
         ),
       });
@@ -186,13 +206,26 @@ export default function OrderManager() {
 
       setOrders((prev) =>
         prev.map((o) =>
-          orderNumbers.includes(o.orderNumber) ? { ...o, status } : o,
+          orderNumbers.includes(o.orderNumber)
+            ? {
+                ...o,
+                status,
+                ...(extra?.trackingNumber !== undefined
+                  ? { trackingNumber: extra.trackingNumber }
+                  : {}),
+                ...(extra?.adminNotes !== undefined
+                  ? { adminNotes: extra.adminNotes }
+                  : {}),
+              }
+            : o,
         ),
       );
       setSelected((prev) => prev.filter((n) => !orderNumbers.includes(n)));
       toast.success(
         orderNumbers.length === 1
-          ? `Order ${orderNumbers[0]} → ${orderStatusLabel(status)}`
+          ? `Order ${orderNumbers[0]} → ${orderStatusLabel(status)}${
+              data.emailSent ? " · customer emailed" : ""
+            }`
           : `${orderNumbers.length} orders → ${orderStatusLabel(status)}`,
       );
     } catch {
@@ -205,6 +238,12 @@ export default function OrderManager() {
 
   const onStatusSelect = (order: AdminOrder, nextStatus: string) => {
     if (nextStatus === order.status) return;
+    if (nextStatus === "shipped") {
+      setShipOrder(order);
+      setShipTracking(order.trackingNumber || "");
+      setShipNotes(order.adminNotes || "");
+      return;
+    }
     askConfirm(
       "Update order status",
       `Change ${order.orderNumber} from "${orderStatusLabel(order.status)}" to "${orderStatusLabel(nextStatus)}"?`,
@@ -212,6 +251,44 @@ export default function OrderManager() {
         void applyStatusUpdate([order.orderNumber], nextStatus);
       },
     );
+  };
+
+  const confirmShip = async () => {
+    if (!shipOrder) return;
+    setShippingBusy(true);
+    await applyStatusUpdate([shipOrder.orderNumber], "shipped", {
+      trackingNumber: shipTracking,
+      adminNotes: shipNotes,
+      sendShippingEmail: true,
+    });
+    setShippingBusy(false);
+    setShipOrder(null);
+  };
+
+  const saveAdminNotes = async (order: AdminOrder, notes: string) => {
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderNumber: order.orderNumber,
+          adminNotes: notes,
+        }),
+      });
+      if (!res.ok) {
+        toast.error("Could not save notes");
+        return;
+      }
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.orderNumber === order.orderNumber ? { ...o, adminNotes: notes } : o,
+        ),
+      );
+      toast.success("Internal note saved");
+    } catch {
+      toast.error("Network error");
+    }
   };
 
   const onBulkStatus = () => {
@@ -626,29 +703,69 @@ export default function OrderManager() {
                         </tr>
                         {isOpen && (
                           <tr className="bg-[#FBF8F3]">
-                            <td colSpan={8} className="px-6 py-4">
-                              <div className="text-xs font-medium text-[#6B5F54] mb-2">
-                                Line items
+                            <td colSpan={8} className="px-6 py-4 space-y-4">
+                              <div>
+                                <div className="text-xs font-medium text-[#6B5F54] mb-2">
+                                  Line items
+                                </div>
+                                {o.items?.length ? (
+                                  <ul className="space-y-1 text-sm">
+                                    {o.items.map((item, idx) => (
+                                      <li
+                                        key={`${o.orderNumber}-item-${idx}`}
+                                        className="flex justify-between gap-4 max-w-lg"
+                                      >
+                                        <span>
+                                          {item.name}
+                                          {item.selectedLength
+                                            ? ` · ${item.selectedLength}`
+                                            : ""}{" "}
+                                          × {item.quantity}
+                                        </span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-sm text-[#6B5F54]">No item details stored.</p>
+                                )}
                               </div>
-                              {o.items?.length ? (
-                                <ul className="space-y-1 text-sm">
-                                  {o.items.map((item, idx) => (
-                                    <li
-                                      key={`${o.orderNumber}-item-${idx}`}
-                                      className="flex justify-between gap-4 max-w-lg"
-                                    >
-                                      <span>
-                                        {item.name}
-                                        {item.selectedLength
-                                          ? ` · ${item.selectedLength}`
-                                          : ""}{" "}
-                                        × {item.quantity}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <p className="text-sm text-[#6B5F54]">No item details stored.</p>
+                              {o.trackingNumber && (
+                                <p className="text-xs text-[#6B5F54]">
+                                  Tracking:{" "}
+                                  <span className="font-mono text-[#2C2522]">
+                                    {o.trackingNumber}
+                                  </span>
+                                </p>
+                              )}
+                              <div className="max-w-lg">
+                                <label className="text-xs font-medium text-[#6B5F54] block mb-1">
+                                  Internal notes (ops only)
+                                </label>
+                                <textarea
+                                  defaultValue={o.adminNotes || ""}
+                                  rows={2}
+                                  className="input-premium w-full text-sm rounded-xl"
+                                  placeholder="Courier, VIP note, issue log…"
+                                  onBlur={(e) => {
+                                    const v = e.target.value;
+                                    if (v !== (o.adminNotes || "")) {
+                                      void saveAdminNotes(o, v);
+                                    }
+                                  }}
+                                />
+                              </div>
+                              {o.status !== "shipped" && o.status !== "delivered" && o.status !== "cancelled" && (
+                                <button
+                                  type="button"
+                                  className="btn-primary text-xs px-4 py-2 rounded-xl"
+                                  onClick={() => {
+                                    setShipOrder(o);
+                                    setShipTracking(o.trackingNumber || "");
+                                    setShipNotes(o.adminNotes || "");
+                                  }}
+                                >
+                                  Mark as shipped + email customer
+                                </button>
                               )}
                             </td>
                           </tr>
@@ -691,6 +808,54 @@ export default function OrderManager() {
           </>
         )}
       </div>
+
+      {/* Ship modal */}
+      {shipOrder && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
+            <h3 className="text-xl font-semibold mb-1">Mark as shipped</h3>
+            <p className="text-sm text-[#6B5F54] mb-4">
+              {shipOrder.orderNumber} · {shipOrder.fullName}
+            </p>
+            <label className="text-xs text-[#6B5F54] block mb-1">Tracking number</label>
+            <input
+              value={shipTracking}
+              onChange={(e) => setShipTracking(e.target.value)}
+              className="input-premium w-full mb-3 rounded-xl text-sm"
+              placeholder="Waybill / courier ref"
+            />
+            <label className="text-xs text-[#6B5F54] block mb-1">Internal notes</label>
+            <textarea
+              value={shipNotes}
+              onChange={(e) => setShipNotes(e.target.value)}
+              rows={2}
+              className="input-premium w-full mb-4 rounded-xl text-sm"
+              placeholder="Optional ops note"
+            />
+            <p className="text-xs text-[#6B5F54] mb-4">
+              Customer receives a shipping email with tracking (when Resend is configured).
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="flex-1 border border-[#D4C9B8] rounded-xl py-2.5 text-sm"
+                onClick={() => setShipOrder(null)}
+                disabled={shippingBusy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="flex-1 btn-primary rounded-xl py-2.5 text-sm disabled:opacity-60"
+                onClick={() => void confirmShip()}
+                disabled={shippingBusy}
+              >
+                {shippingBusy ? "Sending…" : "Ship & email"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirm modal */}
       {confirmOpen && (
